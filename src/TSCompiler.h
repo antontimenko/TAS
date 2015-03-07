@@ -6,6 +6,7 @@
 class TSCompiler
 {
 public:
+    void compile(string &sourceFilePath, string &resultFilePath);
     static TSCompiler &instance();
 private:
     TSCompiler();
