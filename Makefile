@@ -1,7 +1,7 @@
-CFLAGS=-std=c11 -Wall -Wextra -pedantic -Werror -Wno-error=unused
-CXXFLAGS=-std=c++14 -Wall -Wextra -pedantic -Werror -Wno-error=unused
+CFLAGS=-std=c11 -Wall -Wextra -pedantic
+CXXFLAGS=-std=c++14 -Wall -Wextra -pedantic
 LIBS=
-SOURCES=main.cpp
+SOURCES=main.cpp TSCompiler.cpp
 
 all: build_dir tas
 
