@@ -3,6 +3,13 @@
 
 #include "TSGlobal.h"
 
-vector<string> constructLexemeVector(const string &sourceFileContents);
+struct TSLexemeContainer
+{
+    const uint row;
+    const uint column;
+    const string lexeme;
+};
+
+vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFileContents);
 
 #endif

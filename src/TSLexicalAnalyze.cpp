@@ -2,11 +2,13 @@
 
 #include "TSUtility.h"
 
-vector<string> constructLexemeVector(const string &sourceFileContents)
+vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFileContents)
 {
-    vector<string> lexemeVector;
+    vector<TSLexemeContainer> lexemeContainerVector;
 
     string currentLexeme;
+    uint row = 1;
+    uint column = 1;
     for (uint i = 0; i < sourceFileContents.size(); ++i)
     {
         //cout << sourceFileContents[i] << ": " << (uint)sourceFileContents[i] << endl;
@@ -18,54 +20,73 @@ vector<string> constructLexemeVector(const string &sourceFileContents)
             currentLexeme += currentChar;
             if (currentChar == currentLexeme[0])
             {
-                lexemeVector.push_back(currentLexeme);
+                lexemeContainerVector.push_back({row, column - currentLexeme.size(), currentLexeme});
                 currentLexeme.erase();
             }
+
+            ++column;
         }
         else
         {
             if (isCharIdentifierCompatible(currentChar))
+            {
                 currentLexeme += currentChar;
+
+                ++column;
+            }
             else if (isCharSingleCharacterLexemCompatible(currentChar))
             {
                 if (!currentLexeme.empty())
                 {
-                    lexemeVector.push_back(currentLexeme);
+                    lexemeContainerVector.push_back({row, column - currentLexeme.size(), currentLexeme});
                     currentLexeme.erase();
                 }
 
-                lexemeVector.push_back(string(1, currentChar));
+                lexemeContainerVector.push_back({row, column, string(1, currentChar)});
+
+                ++column;
             }
             else if (isCharLexemDistributorCompatible(currentChar))
             {
                 if (!currentLexeme.empty())
                 {
-                    lexemeVector.push_back(currentLexeme);
+                    lexemeContainerVector.push_back({row, column - currentLexeme.size(), currentLexeme});
                     currentLexeme.erase();
                 }
+
+                ++column;
             }
             else if (isCharQuoteCompatible(currentChar))
             {
                 if (!currentLexeme.empty())
                 {
-                    lexemeVector.push_back(currentLexeme);
+                    lexemeContainerVector.push_back({row, column - currentLexeme.size(), currentLexeme});
                     currentLexeme.erase();
                 }
 
                 currentLexeme += currentChar;
+
+                ++column;
             }
-            else if (isCharLineTerminatorCompatible(currentChar))
+            else if ((sourceFileContents[i] == cCR) || (sourceFileContents[i] == cLF))
             {
-                if (!currentLexeme.empty())
+                if ((sourceFileContents[i] == cCR) || 
+                     ((sourceFileContents[i] == cLF) && ((i == 0) || (sourceFileContents[i - 1] != cCR))))
                 {
-                    lexemeVector.push_back(currentLexeme);
-                    currentLexeme.erase();
+                    if (!currentLexeme.empty())
+                    {
+                        lexemeContainerVector.push_back({row, column - currentLexeme.size(), currentLexeme});
+                        currentLexeme.erase();
+                    }
+
+                    ++row;
+                    column = 1;
                 }
             }
             else
             {
                 cout << "Error: undefined character" << endl;
-                lexemeVector.clear();
+                lexemeContainerVector.clear();
                 currentLexeme.erase();
                 break;
             }
@@ -73,7 +94,7 @@ vector<string> constructLexemeVector(const string &sourceFileContents)
     }
 
     if (!currentLexeme.empty())
-        lexemeVector.push_back(currentLexeme);
+        lexemeContainerVector.push_back({row, column - currentLexeme.size() + 1, currentLexeme});
 
-    return lexemeVector;
+    return lexemeContainerVector;
 }

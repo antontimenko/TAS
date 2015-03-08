@@ -15,10 +15,12 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
     {
         string sourceFileContents((std::istreambuf_iterator<char>(sourceFile)), std::istreambuf_iterator<char>());
 
-        vector<string> lexemeVector = constructLexemeVector(sourceFileContents);
+        vector<TSLexemeContainer> lexemeContainerVector = constructLexemeContainerVector(sourceFileContents);
 
-        for (uint i = 0; i < lexemeVector.size(); ++i)
-            cout << lexemeVector[i] << endl;
+        for (uint i = 0; i < lexemeContainerVector.size(); ++i)
+            cout << "(" << lexemeContainerVector[i].row << ","
+                 << lexemeContainerVector[i].column << "): "
+                 << lexemeContainerVector[i].lexeme << endl;
     }
     else
         cout << "Error: file not found, or permission denied" << endl;

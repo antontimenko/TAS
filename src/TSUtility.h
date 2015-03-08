@@ -11,7 +11,6 @@ bool isCharNumberCompatible(char ch);
 bool isCharSingleCharacterLexemCompatible(char ch);
 bool isCharLexemDistributorCompatible(char ch);
 bool isCharCommentCompatible(char ch);
-bool isCharLineTerminatorCompatible(char ch);
 bool isCharQuoteCompatible(char ch);
 
 #endif

@@ -35,11 +35,6 @@ bool isCharCommentCompatible(char ch)
     return ch == commentChar;
 }
 
-bool isCharLineTerminatorCompatible(char ch)
-{
-    return (ch == cLF) || (ch == cCR);
-}
-
 bool isCharQuoteCompatible(char ch)
 {
     return quoteCompatibleChars.find(ch) != string::npos;
