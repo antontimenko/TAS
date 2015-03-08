@@ -1,6 +1,7 @@
 #include "TSLexicalAnalyze.h"
 
 #include "TSUtility.h"
+#include "TSException.h"
 
 vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFileContents)
 {
@@ -11,8 +12,6 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
     uint column = 1;
     for (uint i = 0; i < sourceFileContents.size(); ++i)
     {
-        //cout << sourceFileContents[i] << ": " << (uint)sourceFileContents[i] << endl;
-
         const char &currentChar = sourceFileContents[i];
 
         if ((!currentLexeme.empty()) && (isCharQuoteCompatible(currentLexeme[0])))
@@ -84,17 +83,12 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
                 }
             }
             else
-            {
-                cout << "Error: undefined character" << endl;
-                lexemeContainerVector.clear();
-                currentLexeme.erase();
-                break;
-            }
+                throw TSCompileError(string("Unknown character \"") + currentChar + "\"", &sourceFileContents, row, column, 1);
         }
     }
 
     if (!currentLexeme.empty())
-        lexemeContainerVector.push_back({row, column - currentLexeme.size() + 1, currentLexeme});
+        lexemeContainerVector.push_back({row, column - currentLexeme.size(), currentLexeme});
 
     return lexemeContainerVector;
 }
