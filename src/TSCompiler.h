@@ -6,7 +6,7 @@
 class TSCompiler
 {
 public:
-    void compile(string &sourceFilePath, string &resultFilePath);
+    void compile(const string &sourceFilePath, const string &resultFilePath) const;
     static TSCompiler &instance();
 private:
     TSCompiler();
@@ -14,6 +14,6 @@ private:
     TSCompiler &operator=(const TSCompiler &) = delete;
 };
 
-void TSCompile(string &sourceFilePath, string &resultFilePath);
+void TSCompile(const string &sourceFilePath, const string &resultFilePath);
 
 #endif
