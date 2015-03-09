@@ -11,5 +11,6 @@ struct TSLexemeContainer
 };
 
 vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFileContents);
+vector<TSLexemeContainer> convertLexemeContainerVectorToUpperCase(vector<TSLexemeContainer> &lexemeContainerVector);
 
 #endif

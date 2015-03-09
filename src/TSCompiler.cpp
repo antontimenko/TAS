@@ -20,6 +20,7 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
         string sourceFileContents((std::istreambuf_iterator<char>(sourceFile)), std::istreambuf_iterator<char>());
 
         vector<TSLexemeContainer> lexemeContainerVector = constructLexemeContainerVector(sourceFileContents);
+        lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVector);
 
         for (uint i = 0; i < lexemeContainerVector.size(); ++i)
             cout << "(" << lexemeContainerVector[i].row << ","

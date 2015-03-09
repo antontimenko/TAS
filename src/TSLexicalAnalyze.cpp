@@ -2,6 +2,7 @@
 
 #include "TSUtility.h"
 #include "TSException.h"
+#include <ctype.h>
 
 vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFileContents)
 {
@@ -91,4 +92,30 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
         lexemeContainerVector.push_back({row, column - currentLexeme.size(), currentLexeme});
 
     return lexemeContainerVector;
+}
+
+vector<TSLexemeContainer> convertLexemeContainerVectorToUpperCase(vector<TSLexemeContainer> &lexemeContainerVector)
+{
+    vector<TSLexemeContainer> newLexemeContainerVector;
+
+    for (uint i = 0; i < lexemeContainerVector.size(); ++i)
+    {
+        if (!isCharQuoteCompatible(lexemeContainerVector[i].lexeme[0]) && !isCharQuoteCompatible(lexemeContainerVector[i].lexeme[lexemeContainerVector[i].lexeme.size() - 1]))
+        {
+            string currentLexeme;
+            
+            for (uint j = 0; j < lexemeContainerVector[i].lexeme.size(); ++j)
+            {
+                currentLexeme += (char)toupper(lexemeContainerVector[i].lexeme[j]);
+            }
+
+            newLexemeContainerVector.push_back({lexemeContainerVector[i].row, lexemeContainerVector[i].column, currentLexeme});
+        }
+        else
+        {
+            newLexemeContainerVector.push_back(lexemeContainerVector[i]);
+        }
+    }
+
+    return newLexemeContainerVector;
 }
