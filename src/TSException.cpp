@@ -10,12 +10,11 @@ const char *TSException::what() const noexcept
     return text.c_str();
 }
 
-TSCompileError::TSCompileError(string text, const string *sourceFileContents, uint row, uint column, uint length) :
+TSCompileError::TSCompileError(string text, uint row, uint column, uint length) :
     TSException(text),
     _row(row),
     _column(column),
-    _length(length),
-    _sourceFileContents(sourceFileContents)
+    _length(length)
 {
 }
 
@@ -32,9 +31,4 @@ const uint &TSCompileError::column() const
 const uint &TSCompileError::length() const
 {
     return _length;
-}
-
-const string &TSCompileError::sourceFileContents() const
-{
-    return *_sourceFileContents;
 }

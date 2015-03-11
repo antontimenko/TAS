@@ -1,7 +1,7 @@
 CFLAGS=-std=c11 -Wall -Wextra -pedantic
 CXXFLAGS=-std=c++14 -Wall -Wextra -pedantic
 LIBS=
-SOURCES=main.cpp TSCompiler.cpp TSLexicalAnalyze.cpp TSUtility.cpp TSException.cpp
+SOURCES=main.cpp TSCompiler.cpp TSLexicalAnalyze.cpp TSUtility.cpp TSException.cpp TSToken.cpp
 
 all: build_dir tas
 
@@ -23,5 +23,5 @@ build/%.o: src/%.cpp
 -include $(addprefix dep/,$(patsubst %.c,%.d,$(patsubst %.cpp,%.d,$(SOURCES))))
 
 clean:
-	rm -R build
-	rm -R dep
+	rm -Rf build
+	rm -Rf dep
