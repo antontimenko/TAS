@@ -4,6 +4,7 @@
 #include "TSException.h"
 #include "TSUtility.h"
 #include "TSToken.h"
+#include "TSDiagnostics.h"
 #include <fstream>
 
 TSCompiler::TSCompiler()
@@ -16,7 +17,7 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
     {
         std::ifstream sourceFile(sourceFilePath);
         if (!sourceFile.is_open())
-            throw TSException(string("File \"") + sourceFilePath + "\" not found, or permission denied");
+            throw TSException(string("File \'") + sourceFilePath + "\' not found, or permission denied");
 
         string sourceFileContents((std::istreambuf_iterator<char>(sourceFile)), std::istreambuf_iterator<char>());
 
@@ -77,55 +78,12 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
         }
         catch (TSCompileError &e)
         {
-            cout << "Compile Error: ("
-             << e.row() << ","
-             << e.column() << "): "
-             << e.what() << endl;
-
-            uint i;
-
-            i = 0;
-            uint row = 1;
-            while (row < e.row())
-            {
-                if ((sourceFileContents[i] == cCR) || (sourceFileContents[i] == cLF))
-                    ++row;
-                if ((sourceFileContents[i] == cCR) && (sourceFileContents[i + 1] == cLF))
-                    ++i;
-                ++i;
-            }
-
-            uint lineStartIndex = i;
-            
-            while ((sourceFileContents[i] != cCR) && (sourceFileContents[i] != cLF) && (i < sourceFileContents.size()))
-            {
-                if (sourceFileContents[i] == 0x9)
-                    cout << "    ";
-                else
-                    cout << sourceFileContents[i];
-
-                ++i;
-            }
-            cout << endl;
-
-            i = lineStartIndex;
-            uint j = 1;
-            while (j < e.column())
-            {
-                if (sourceFileContents[i] == 0x9)
-                    cout << "    ";
-                else
-                    cout << " ";
-
-                ++i;
-                ++j;
-            }
-            cout << "^" << endl;
+            printCompileError(e.what(), sourceFileContents, e.row(), e.column(), e.length());
         }
     }
     catch (std::exception &e)
     {
-        cout << e.what() << endl;
+        printError(e.what());
     }
 }
 

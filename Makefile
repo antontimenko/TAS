@@ -1,7 +1,7 @@
 CFLAGS=-std=c11 -Wall -Wextra -pedantic
 CXXFLAGS=-std=c++14 -Wall -Wextra -pedantic
 LIBS=
-SOURCES=main.cpp TSCompiler.cpp TSLexicalAnalyze.cpp TSUtility.cpp TSException.cpp TSToken.cpp
+SOURCES=main.cpp TSCompiler.cpp TSLexicalAnalyze.cpp TSUtility.cpp TSException.cpp TSToken.cpp TSDiagnostics.cpp
 
 all: build_dir tas
 

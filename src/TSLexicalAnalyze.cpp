@@ -80,7 +80,7 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
                 currentLexeme += currentChar;
             }
             else
-                throw TSCompileError(string("Unknown character \"") + currentChar + "\"", row, column, 1);
+                throw TSCompileError("Unknown character", row, column, 1);
 
             ++column;
         }
