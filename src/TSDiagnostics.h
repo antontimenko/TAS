@@ -25,6 +25,6 @@ extern const char *BWhite;
 }
 
 void printError(string text);
-void printCompileError(string text, const string &sourceFileContents, uint row, uint column, uint length);
+void printCompileError(string text, const string &sourceFileContents, size_t row, size_t column, size_t length);
 
 #endif

@@ -151,9 +151,9 @@ private:
 
 struct TSTokenContainer
 {
-    const uint row;
-    const uint column;
-    const uint length;
+    const size_t row;
+    const size_t column;
+    const size_t length;
     const TSToken token;
 };
 

@@ -5,8 +5,8 @@
 
 struct TSLexemeContainer
 {
-    const uint row;
-    const uint column;
+    const size_t row;
+    const size_t column;
     const string lexeme;
 };
 

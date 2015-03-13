@@ -28,7 +28,7 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
 
             vector<TSTokenContainer> tokenContainerVector = constructTokenContainerVector(lexemeContainerVector);
 
-            for (uint i = 0; i < tokenContainerVector.size(); ++i)
+            for (size_t i = 0; i < tokenContainerVector.size(); ++i)
             {
                 cout << "(" << tokenContainerVector[i].row << "," << tokenContainerVector[i].column << "): ";
                 

@@ -157,7 +157,7 @@ TSToken::TSToken(TSLexemeContainer &lexemeContainer)
         try
         {
             size_t stoiStop;
-            uint realNumberSize;
+            size_t realNumberSize;
 
             if (isCharNumberCompatible(lexeme[lexeme.size() - 1]))
             {
@@ -439,7 +439,7 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
 {
     vector<TSTokenContainer> tokenContainerVector;
 
-    for (uint i = 0; i < lexemeContainerVector.size(); ++i)
+    for (size_t i = 0; i < lexemeContainerVector.size(); ++i)
     {
         tokenContainerVector.push_back({lexemeContainerVector[i].row,
                                         lexemeContainerVector[i].column,

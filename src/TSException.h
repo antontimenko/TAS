@@ -18,14 +18,14 @@ class TSCompileError : public TSException
 {
 public:
     TSCompileError() = delete;
-    TSCompileError(string text, uint row, uint column, uint length = 0);
-    virtual const uint &row() const;
-    virtual const uint &column() const;
-    virtual const uint &length() const;
+    TSCompileError(string text, size_t row, size_t column, size_t length = 0);
+    virtual const size_t &row() const;
+    virtual const size_t &column() const;
+    virtual const size_t &length() const;
 protected:
-    const uint _row;
-    const uint _column;
-    const uint _length;
+    const size_t _row;
+    const size_t _column;
+    const size_t _length;
 };
 
 #endif

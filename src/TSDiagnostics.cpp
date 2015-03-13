@@ -25,7 +25,7 @@ void printError(string text)
     cout << TSColor::BWhite << text << TSColor::Reset << endl;
 }
 
-void printCompileError(string text, const string &sourceFileContents, uint row, uint column, uint length)
+void printCompileError(string text, const string &sourceFileContents, size_t row, size_t column, size_t length)
 {
     cout << TSColor::BWhite << flush;
 
@@ -34,11 +34,11 @@ void printCompileError(string text, const string &sourceFileContents, uint row, 
          << column << "): "
          << text << endl;
 
-    uint i;
-    uint j;
+    size_t i;
+    size_t j;
 
     i = 0;
-    uint currentRow = 1;
+    size_t currentRow = 1;
     while (currentRow < row)
     {
         if ((sourceFileContents[i] == cCR) || (sourceFileContents[i] == cLF))
@@ -48,7 +48,7 @@ void printCompileError(string text, const string &sourceFileContents, uint row, 
         ++i;
     }
 
-    uint lineStartIndex = i;
+    size_t lineStartIndex = i;
     
     j = 1;
     while ((sourceFileContents[i] != cCR) && (sourceFileContents[i] != cLF) && (i < sourceFileContents.size()))

@@ -9,11 +9,11 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
     vector<TSLexemeContainer> lexemeContainerVector;
 
     string currentLexeme;
-    uint row = 1;
-    uint column = 1;
-    uint currentLexemeRow;
-    uint currentLexemeColumn;
-    for (uint i = 0; i < sourceFileContents.size(); ++i)
+    size_t row = 1;
+    size_t column = 1;
+    size_t currentLexemeRow;
+    size_t currentLexemeColumn;
+    for (size_t i = 0; i < sourceFileContents.size(); ++i)
     {
         if ((i > 0) && ((sourceFileContents[i - 1] == cLF) || ((sourceFileContents[i - 1] == cCR) && (sourceFileContents[i] != cLF))))
         {
@@ -101,13 +101,13 @@ vector<TSLexemeContainer> convertLexemeContainerVectorToUpperCase(vector<TSLexem
 {
     vector<TSLexemeContainer> newLexemeContainerVector;
 
-    for (uint i = 0; i < lexemeContainerVector.size(); ++i)
+    for (size_t i = 0; i < lexemeContainerVector.size(); ++i)
     {
         if (!isCharQuoteCompatible(lexemeContainerVector[i].lexeme[0]) && !isCharQuoteCompatible(lexemeContainerVector[i].lexeme[lexemeContainerVector[i].lexeme.size() - 1]))
         {
             string currentLexeme;
             
-            for (uint j = 0; j < lexemeContainerVector[i].lexeme.size(); ++j)
+            for (size_t j = 0; j < lexemeContainerVector[i].lexeme.size(); ++j)
             {
                 currentLexeme += (char)toupper(lexemeContainerVector[i].lexeme[j]);
             }

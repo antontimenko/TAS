@@ -10,7 +10,7 @@ const char *TSException::what() const noexcept
     return text.c_str();
 }
 
-TSCompileError::TSCompileError(string text, uint row, uint column, uint length) :
+TSCompileError::TSCompileError(string text, size_t row, size_t column, size_t length) :
     TSException(text),
     _row(row),
     _column(column),
@@ -18,17 +18,17 @@ TSCompileError::TSCompileError(string text, uint row, uint column, uint length) 
 {
 }
 
-const uint &TSCompileError::row() const
+const size_t &TSCompileError::row() const
 {
     return _row;
 }
 
-const uint &TSCompileError::column() const
+const size_t &TSCompileError::column() const
 {
     return _column;
 }
 
-const uint &TSCompileError::length() const
+const size_t &TSCompileError::length() const
 {
     return _length;
 }
