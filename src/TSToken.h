@@ -4,11 +4,14 @@
 #include "TSGlobal.h"
 #include "TSLexicalAnalyze.h"
 
+struct TSTokenContainer;
+
 class TSToken
 {
 public:
     enum class Type
     {
+        null,
         userIdentifier,
         singleChar,
         directive,
@@ -117,26 +120,29 @@ public:
         JNB
     };
 
-    TSToken() = delete;
-    TSToken(TSLexemeContainer &lexemeContainer);
-    TSToken(const TSToken &token);
-    TSToken &operator=(const TSToken &token);
-    Type getType() const;
-    string stringValue() const;
-    SingleChar singleCharValue() const;
-    Directive directiveValue() const;
-    Instruction instructionValue() const;
-    Register8 register8Value() const;
-    Register32 register32Value() const;
-    RegisterSegment registerSegmentValue() const;
-    SizeIdentifier sizeIdentifierValue() const;
-    DataIdentifier dataIdentifierValue() const;
-    long long numberValue() const;
-    Condition conditionValue() const;
-    ~TSToken();
-private:
-    Type type;
-    void *dataP;
+    template<typename T>
+    inline TSToken(Type tokenType, T value) :
+        _type(tokenType),
+        valueP(new T(value))
+    {
+    }
+    inline TSToken(Type tokenType) :
+        TSToken(tokenType, nullptr)
+    {
+    }
+    inline TSToken() :
+        TSToken(Type::null)
+    {
+    }
+    inline Type type() const
+    {
+        return _type;
+    }
+    template<typename T>
+    inline T value() const
+    {
+        return static_cast<T>(*valueP);
+    }
     static const map<string, SingleChar> singleCharMap;
     static const map<string, Directive> directiveMap;
     static const map<string, Register8> register8Map;
@@ -147,6 +153,10 @@ private:
     static const map<string, Condition> conditionMap;
     static const map<string, Instruction> instructionMap;
     static const string sizeOperatorStr;
+    static vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
+private:
+    Type _type;
+    shared_ptr<void> valueP;
 };
 
 struct TSTokenContainer
@@ -156,7 +166,5 @@ struct TSTokenContainer
     const size_t length;
     const TSToken token;
 };
-
-vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
 
 #endif

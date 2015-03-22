@@ -26,13 +26,13 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             vector<TSLexemeContainer> lexemeContainerVector = constructLexemeContainerVector(sourceFileContents);
             lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVector);
 
-            vector<TSTokenContainer> tokenContainerVector = constructTokenContainerVector(lexemeContainerVector);
+            vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
 
             for (size_t i = 0; i < tokenContainerVector.size(); ++i)
             {
                 cout << "(" << tokenContainerVector[i].row << "," << tokenContainerVector[i].column << "): ";
                 
-                switch (tokenContainerVector[i].token.getType())
+                switch (tokenContainerVector[i].token.type())
                 {
                     case TSToken::Type::userIdentifier:
                         cout << "userIdentifier: " << lexemeContainerVector[i].lexeme << endl;
@@ -72,6 +72,9 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
                         break;
                     case TSToken::Type::condition:
                         cout << "condition: " << lexemeContainerVector[i].lexeme << endl;
+                        break;
+                    default:
+                        cout << "null: " << lexemeContainerVector[i].lexeme << endl;
                         break;
                 }
             }
