@@ -2,6 +2,8 @@
 #define _TSDIAGNOSTICS_H_
 
 #include "TSGlobal.h"
+#include "TSToken.h"
+#include "TSLexicalAnalyze.h"
 
 namespace TSColor
 {
@@ -26,5 +28,6 @@ extern const char *BWhite;
 
 void printError(string text);
 void printCompileError(string text, const string &sourceFileContents, size_t row, size_t column, size_t length);
+void printLexemeTable(const vector<TSLexemeContainer> &lexemeContainerVector, const vector<TSTokenContainer> &tokenContainerVector);
 
 #endif
