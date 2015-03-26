@@ -3,7 +3,7 @@
 
 #include "TSGlobal.h"
 #include "TSToken.h"
-#include "TSLexicalAnalyze.h"
+#include "TSLexeme.h"
 
 namespace TSColor
 {

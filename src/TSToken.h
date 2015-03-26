@@ -2,7 +2,7 @@
 #define _TSTOKEN_H_
 
 #include "TSGlobal.h"
-#include "TSLexicalAnalyze.h"
+#include "TSLexeme.h"
 
 struct TSTokenContainer;
 

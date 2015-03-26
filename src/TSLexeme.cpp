@@ -1,4 +1,4 @@
-#include "TSLexicalAnalyze.h"
+#include "TSLexeme.h"
 
 #include "TSUtility.h"
 #include "TSException.h"

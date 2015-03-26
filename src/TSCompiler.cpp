@@ -1,6 +1,6 @@
 #include "TSCompiler.h"
 
-#include "TSLexicalAnalyze.h"
+#include "TSLexeme.h"
 #include "TSException.h"
 #include "TSUtility.h"
 #include "TSToken.h"
