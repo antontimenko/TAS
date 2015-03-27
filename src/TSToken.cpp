@@ -1,18 +1,22 @@
 #include "TSToken.h"
 
-#include "TSUtility.h"
 #include "TSException.h"
 #include <stdexcept>
 
 const map<string, TSToken::SingleChar> TSToken::singleCharMap = {
     {",", TSToken::SingleChar::COMMA},
     {":", TSToken::SingleChar::COLON},
-    {"[", TSToken::SingleChar::SQUARE_BRACKET_OPEN},
-    {"]", TSToken::SingleChar::SQUARE_BRACKET_CLOSE},
-    {"(", TSToken::SingleChar::ROUND_BRACKET_OPEN},
-    {")", TSToken::SingleChar::ROUND_BRACKET_CLOSE},
-    {"+", TSToken::SingleChar::PLUS},
-    {"-", TSToken::SingleChar::MINUS}
+    {"[", TSToken::SingleChar::BRACKET_OPEN},
+    {"]", TSToken::SingleChar::BRACKET_CLOSE}
+};
+
+const map<string, TSToken::MathSymbol> TSToken::mathSymbolMap = {
+    {"+", TSToken::MathSymbol::PLUS},
+    {"-", TSToken::MathSymbol::MINUS},
+    {"*", TSToken::MathSymbol::MULTIPLY},
+    {"/", TSToken::MathSymbol::DIVIDE},
+    {"(", TSToken::MathSymbol::BRACKET_OPEN},
+    {")", TSToken::MathSymbol::BRACKET_CLOSE},
 };
 
 const map<string, TSToken::Directive> TSToken::directiveMap = {
@@ -102,31 +106,33 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
         
         TSToken currentToken;
 
-        if (lexeme.compare(sizeOperatorStr) == 0)
+        if (lexeme == sizeOperatorStr)
             currentToken = TSToken(Type::sizeOperator);
-        else if (singleCharMap.find(lexeme) != singleCharMap.end())
+        else if (singleCharMap.count(lexeme))
             currentToken = TSToken(Type::singleChar, singleCharMap.find(lexeme)->second);
-        else if (directiveMap.find(lexeme) != directiveMap.end())
+        else if (mathSymbolMap.count(lexeme))
+            currentToken = TSToken(Type::mathSymbol, mathSymbolMap.find(lexeme)->second);
+        else if (directiveMap.count(lexeme))
             currentToken = TSToken(Type::directive, directiveMap.find(lexeme)->second);
-        else if (register8Map.find(lexeme) != register8Map.end())
+        else if (register8Map.count(lexeme))
             currentToken = TSToken(Type::register8, register8Map.find(lexeme)->second);
-        else if (register32Map.find(lexeme) != register32Map.end())
+        else if (register32Map.count(lexeme))
             currentToken = TSToken(Type::register32, register32Map.find(lexeme)->second);
-        else if (registerSegmentMap.find(lexeme) != registerSegmentMap.end())
+        else if (registerSegmentMap.count(lexeme))
             currentToken = TSToken(Type::registerSegment, registerSegmentMap.find(lexeme)->second);
-        else if (sizeIdentifierMap.find(lexeme) != sizeIdentifierMap.end())
+        else if (sizeIdentifierMap.count(lexeme))
             currentToken = TSToken(Type::sizeIdentifier, sizeIdentifierMap.find(lexeme)->second);
-        else if (dataIdentifierMap.find(lexeme) != dataIdentifierMap.end())
+        else if (dataIdentifierMap.count(lexeme))
             currentToken = TSToken(Type::dataIdentifier, dataIdentifierMap.find(lexeme)->second);
-        else if (conditionMap.find(lexeme) != conditionMap.end())
+        else if (conditionMap.count(lexeme))
             currentToken = TSToken(Type::condition, conditionMap.find(lexeme)->second);
-        else if (instructionMap.find(lexeme) != instructionMap.end())
+        else if (instructionMap.count(lexeme))
             currentToken = TSToken(Type::instruction, instructionMap.find(lexeme)->second);
         else if (isCharQuoteCompatible(lexeme[0]))
             currentToken = TSToken(Type::constantString, lexeme.substr(1, lexeme.size() - 2));
         else if (isCharNumberCompatible(lexeme[0]))
         {
-            long long number;
+            longlong number;
 
             try
             {
@@ -176,4 +182,14 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
     }
 
     return tokenContainerVector;
+}
+
+bool TSToken::isMathSymbolRightCompatible(TSToken token)
+{
+    return (token.type() == Type::mathSymbol) && 
+           ((token.value<MathSymbol>() == MathSymbol::PLUS) ||
+            (token.value<MathSymbol>() == MathSymbol::MINUS) ||
+            (token.value<MathSymbol>() == MathSymbol::MULTIPLY) ||
+            (token.value<MathSymbol>() == MathSymbol::DIVIDE) ||
+            (token.value<MathSymbol>() == MathSymbol::BRACKET_OPEN));
 }

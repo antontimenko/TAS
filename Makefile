@@ -5,10 +5,11 @@ SOURCES= \
 	main.cpp \
 	TSCompiler.cpp \
 	TSLexeme.cpp \
-	TSUtility.cpp \
 	TSException.cpp \
 	TSToken.cpp \
-	TSDiagnostics.cpp
+	TSDiagnostics.cpp \
+	TSParser.cpp \
+	TSMath.cpp
 
 all: build_dir tas
 

@@ -2,9 +2,9 @@
 
 #include "TSLexeme.h"
 #include "TSException.h"
-#include "TSUtility.h"
 #include "TSToken.h"
 #include "TSDiagnostics.h"
+#include "TSParser.h"
 #include <fstream>
 
 TSCompiler::TSCompiler()
@@ -28,7 +28,9 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
 
             vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
 
-            printLexemeTable(lexemeContainerVector, tokenContainerVector);
+            parse(tokenContainerVector);
+
+            //printLexemeTable(lexemeContainerVector, tokenContainerVector);
         }
         catch (TSCompileError &e)
         {

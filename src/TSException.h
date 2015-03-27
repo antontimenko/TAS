@@ -7,7 +7,6 @@
 class TSException : public std::exception
 {
 public:
-    TSException() = delete;
     TSException(string text);
     virtual const char *what() const noexcept;
 protected:
@@ -17,7 +16,6 @@ protected:
 class TSCompileError : public TSException
 {
 public:
-    TSCompileError() = delete;
     TSCompileError(string text, size_t row, size_t column, size_t length = 0);
     virtual const size_t &row() const;
     virtual const size_t &column() const;

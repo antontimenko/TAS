@@ -14,6 +14,7 @@ public:
         null,
         userIdentifier,
         singleChar,
+        mathSymbol,
         directive,
         instruction,
         register8,
@@ -31,12 +32,18 @@ public:
     {
         COMMA,
         COLON,
-        SQUARE_BRACKET_OPEN,
-        SQUARE_BRACKET_CLOSE,
-        ROUND_BRACKET_OPEN,
-        ROUND_BRACKET_CLOSE,
+        BRACKET_OPEN,
+        BRACKET_CLOSE
+    };
+
+    enum class MathSymbol
+    {
         PLUS,
-        MINUS
+        MINUS,
+        MULTIPLY,
+        DIVIDE,
+        BRACKET_OPEN,
+        BRACKET_CLOSE
     };
 
     enum class Directive
@@ -141,9 +148,10 @@ public:
     template<typename T>
     inline T value() const
     {
-        return static_cast<T>(*valueP);
+        return *static_cast<T *>(valueP.get());
     }
     static const map<string, SingleChar> singleCharMap;
+    static const map<string, MathSymbol> mathSymbolMap;
     static const map<string, Directive> directiveMap;
     static const map<string, Register8> register8Map;
     static const map<string, Register32> register32Map;
@@ -154,6 +162,7 @@ public:
     static const map<string, Instruction> instructionMap;
     static const string sizeOperatorStr;
     static vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
+    static bool isMathSymbolRightCompatible(TSToken token);
 private:
     Type _type;
     shared_ptr<void> valueP;
@@ -161,10 +170,10 @@ private:
 
 struct TSTokenContainer
 {
-    const size_t row;
-    const size_t column;
-    const size_t length;
-    const TSToken token;
+    size_t row;
+    size_t column;
+    size_t length;
+    TSToken token;
 };
 
 #endif
