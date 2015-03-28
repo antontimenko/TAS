@@ -28,9 +28,9 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
 
             vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
 
-            parse(tokenContainerVector);
-
             //printLexemeTable(lexemeContainerVector, tokenContainerVector);
+
+            parse(tokenContainerVector);
         }
         catch (TSCompileError &e)
         {

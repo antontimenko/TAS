@@ -3,6 +3,8 @@
 
 #include "TSGlobal.h"
 #include "TSLexeme.h"
+#include "TSUniquePtr.h"
+#include <utility>
 
 struct TSTokenContainer;
 
@@ -141,6 +143,18 @@ public:
         TSToken(Type::null)
     {
     }
+    inline TSToken(const TSToken &token) :
+        _type(token._type),
+        valueP(token.valueP.copy())
+    {
+    }
+    inline TSToken &operator=(const TSToken &token)
+    {
+        _type = token._type;
+        valueP = token.valueP.copy();
+
+        return *this;
+    }
     inline Type type() const
     {
         return _type;
@@ -165,7 +179,7 @@ public:
     static bool isMathSymbolRightCompatible(TSToken token);
 private:
     Type _type;
-    shared_ptr<void> valueP;
+    TSUniquePtr<void> valueP;
 };
 
 struct TSTokenContainer
