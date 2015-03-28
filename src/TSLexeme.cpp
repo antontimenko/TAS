@@ -9,7 +9,7 @@ const char cCR = 0xD;
 const string identifierChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_@?$";
 const string numberChars = "1234567890";
 const string singleCharLexemChars = ",:[]()+-*/";
-const string lexemDistributorChars = {0x9, 0x20, 0xA, 0xD};
+const string lexemDistributorChars = {0x9, 0x20, cLF, cCR};
 const char commentChar = ';';
 const string quoteCompatibleChars = "\'\"";
 
@@ -28,14 +28,9 @@ bool isCharSingleCharacterLexemCompatible(char ch)
     return singleCharLexemChars.find(ch) != string::npos;
 }
 
-bool isCharLexemDistributorCompatible(char ch)
+bool isCharLexemeDistributorCompatible(char ch)
 {
     return lexemDistributorChars.find(ch) != string::npos;
-}
-
-bool isCharCommentCompatible(char ch)
-{
-    return ch == commentChar;
 }
 
 bool isCharQuoteCompatible(char ch)
@@ -52,6 +47,7 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
     size_t column = 1;
     size_t currentLexemeRow;
     size_t currentLexemeColumn;
+    bool isCommentStarted = false;
     for (size_t i = 0; i < sourceFileContents.size(); ++i)
     {
         if ((i > 0) && ((sourceFileContents[i - 1] == cLF) || ((sourceFileContents[i - 1] == cCR) && (sourceFileContents[i] != cLF))))
@@ -62,66 +58,84 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
 
         const char &currentChar = sourceFileContents[i];
 
-        if ((!currentLexeme.empty()) && (isCharQuoteCompatible(currentLexeme[0])))
+        if (isCommentStarted)
         {
-            currentLexeme += currentChar;
-            
-            if (currentChar == currentLexeme[0])
-            {
-                lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
-                currentLexeme.erase();
-            }
+            if ((currentChar == cLF) || (currentChar == cCR))
+                isCommentStarted = false;
         }
         else
         {
-            if (isCharIdentifierCompatible(currentChar))
+            if ((!currentLexeme.empty()) && (isCharQuoteCompatible(currentLexeme[0])))
             {
-                if (currentLexeme.empty())
-                {
-                    currentLexemeRow = row;
-                    currentLexemeColumn = column;
-                }
-
                 currentLexeme += currentChar;
-            }
-            else if (isCharSingleCharacterLexemCompatible(currentChar))
-            {
-                if (!currentLexeme.empty())
+                
+                if (currentChar == currentLexeme[0])
                 {
                     lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
                     currentLexeme.erase();
                 }
-
-                currentLexemeRow = row;
-                currentLexemeColumn = column;
-
-                lexemeContainerVector.push_back({row, column, string(1, currentChar)});
-            }
-            else if (isCharLexemDistributorCompatible(currentChar))
-            {
-                if (!currentLexeme.empty())
-                {
-                    lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
-                    currentLexeme.erase();
-                }
-            }
-            else if (isCharQuoteCompatible(currentChar))
-            {
-                if (!currentLexeme.empty())
-                {
-                    lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
-                    currentLexeme.erase();
-                }
-
-                currentLexemeRow = row;
-                currentLexemeColumn = column;
-
-                currentLexeme += currentChar;
             }
             else
-                throw TSCompileError("Unknown character", row, column, 1);
+            {
+                if (isCharIdentifierCompatible(currentChar))
+                {
+                    if (currentLexeme.empty())
+                    {
+                        currentLexemeRow = row;
+                        currentLexemeColumn = column;
+                    }
 
-            ++column;
+                    currentLexeme += currentChar;
+                }
+                else if (isCharSingleCharacterLexemCompatible(currentChar))
+                {
+                    if (!currentLexeme.empty())
+                    {
+                        lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
+                        currentLexeme.erase();
+                    }
+
+                    currentLexemeRow = row;
+                    currentLexemeColumn = column;
+
+                    lexemeContainerVector.push_back({row, column, string(1, currentChar)});
+                }
+                else if (isCharLexemeDistributorCompatible(currentChar))
+                {
+                    if (!currentLexeme.empty())
+                    {
+                        lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
+                        currentLexeme.erase();
+                    }
+                }
+                else if (currentChar == commentChar)
+                {
+                    if (!currentLexeme.empty())
+                    {
+                        lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
+                        currentLexeme.erase();
+                    }
+
+                    isCommentStarted = true;
+                }
+                else if (isCharQuoteCompatible(currentChar))
+                {
+                    if (!currentLexeme.empty())
+                    {
+                        lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
+                        currentLexeme.erase();
+                    }
+
+                    currentLexemeRow = row;
+                    currentLexemeColumn = column;
+
+                    currentLexeme += currentChar;
+                }
+                else
+                    throw TSCompileError("Unknown character", row, column, 1);
+
+                ++column;
+            }
         }
     }
 

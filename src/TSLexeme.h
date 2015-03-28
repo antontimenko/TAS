@@ -9,8 +9,7 @@ extern const char cCR;
 bool isCharIdentifierCompatible(char ch);
 bool isCharNumberCompatible(char ch);
 bool isCharSingleCharacterLexemCompatible(char ch);
-bool isCharLexemDistributorCompatible(char ch);
-bool isCharCommentCompatible(char ch);
+bool isCharLexemeDistributorCompatible(char ch);
 bool isCharQuoteCompatible(char ch);
 
 struct TSLexemeContainer
