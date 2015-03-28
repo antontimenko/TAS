@@ -33,17 +33,14 @@ public:
     TSUniquePtr(const TSUniquePtr &ptr) = delete;
     inline TSUniquePtr(TSUniquePtr &&ptr) :
         std::unique_ptr<T, void(*)(T *)>(std::move(ptr)),
-        copier(ptr.copier)
+        copier(std::move(ptr.copier))
     {
-        ptr.copier = nullptr;
     }
     TSUniquePtr &operator=(const TSUniquePtr &ptr) = delete;
     inline TSUniquePtr &operator=(TSUniquePtr &&ptr)
     {
         std::unique_ptr<T, void(*)(T *)>::operator=(std::move(ptr));
-        copier = ptr.copier;
-
-        ptr.copier = nullptr;
+        copier = std::move(ptr.copier);
 
         return *this;
     }
