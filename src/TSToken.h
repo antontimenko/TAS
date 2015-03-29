@@ -27,6 +27,7 @@ public:
         dataIdentifier,
         constantNumber,
         constantString,
+        conditionDirective,
         condition
     };
 
@@ -53,10 +54,20 @@ public:
         SEGMENT,
         ENDS,
         EQU,
-        IF,
-        ELSE,
-        ENDIF,
         END
+    };
+
+    enum class Instruction
+    {
+        SCASD,
+        RCL,
+        DIV,
+        OR,
+        CMP,
+        AND,
+        MOV,
+        ADD,
+        JNB
     };
 
     enum class Register8
@@ -106,6 +117,13 @@ public:
         DD
     };
 
+    enum class ConditionDirective
+    {
+        IF,
+        ELSE,
+        ENDIF
+    };
+
     enum class Condition
     {
         EQ,
@@ -114,19 +132,6 @@ public:
         LE,
         GT,
         GE
-    };
-
-    enum class Instruction
-    {
-        SCASD,
-        RCL,
-        DIV,
-        OR,
-        CMP,
-        AND,
-        MOV,
-        ADD,
-        JNB
     };
 
     template<typename T>
@@ -155,10 +160,6 @@ public:
 
         return *this;
     }
-    inline bool operator==(const TSToken &token)
-    {
-        return (_type == token._type) && valueP.compareContents(token.valueP);
-    }
     inline Type type() const
     {
         return _type;
@@ -171,13 +172,14 @@ public:
     static const map<string, SingleChar> singleCharMap;
     static const map<string, MathSymbol> mathSymbolMap;
     static const map<string, Directive> directiveMap;
+    static const map<string, Instruction> instructionMap;
     static const map<string, Register8> register8Map;
     static const map<string, Register32> register32Map;
     static const map<string, RegisterSegment> registerSegmentMap;
     static const map<string, SizeIdentifier> sizeIdentifierMap;
     static const map<string, DataIdentifier> dataIdentifierMap;
+    static const map<string, ConditionDirective> conditionDirectiveMap;
     static const map<string, Condition> conditionMap;
-    static const map<string, Instruction> instructionMap;
     static const string sizeOperatorStr;
     static vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
 private:
@@ -192,12 +194,11 @@ public:
     size_t column;
     size_t length;
     TSToken token;
-    inline bool operator==(const TSTokenContainer &tokenContainer)
+    inline bool operator==(const TSTokenContainer &tokenContainer) const
     {
         return (row == tokenContainer.row) &&
                (column == tokenContainer.column) &&
-               (length == tokenContainer.length) &&
-               (token == tokenContainer.token);
+               (length == tokenContainer.length);
     }
 };
 

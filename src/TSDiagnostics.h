@@ -28,8 +28,8 @@ extern const char *BWhite;
 
 void printError(string text);
 void printCompileError(string text, const string &sourceFileContents, size_t row, size_t column, size_t length);
-void printLexemeTable(const vector<TSTokenContainer> &tokenContainerVector);
-void printLexemeTableNative(const vector<TSLexemeContainer> &lexemeContainerVector, const vector<TSTokenContainer> &tokenContainerVector);
+void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector);
+void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const vector<TSLexemeContainer> &lexemeContainerVector);
 void printEquTable(const map<string, longlong> &equMap);
 
 #endif

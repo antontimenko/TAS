@@ -23,10 +23,19 @@ const map<string, TSToken::Directive> TSToken::directiveMap = {
     {"SEGMENT", TSToken::Directive::SEGMENT},
     {"ENDS", TSToken::Directive::ENDS},
     {"EQU", TSToken::Directive::EQU},
-    {"IF", TSToken::Directive::IF},
-    {"ELSE", TSToken::Directive::ELSE},
-    {"ENDIF", TSToken::Directive::ENDIF},
     {"END", TSToken::Directive::END}
+};
+
+const map<string, TSToken::Instruction> TSToken::instructionMap = {
+    {"SCASD", TSToken::Instruction::SCASD},
+    {"RCL", TSToken::Instruction::RCL},
+    {"DIV", TSToken::Instruction::DIV},
+    {"OR", TSToken::Instruction::OR},
+    {"CMP", TSToken::Instruction::CMP},
+    {"AND", TSToken::Instruction::AND},
+    {"MOV", TSToken::Instruction::MOV},
+    {"ADD", TSToken::Instruction::ADD},
+    {"JNB", TSToken::Instruction::JNB}
 };
 
 const map<string, TSToken::Register8> TSToken::register8Map = {
@@ -72,6 +81,12 @@ const map<string, TSToken::DataIdentifier> TSToken::dataIdentifierMap = {
     {"DD", TSToken::DataIdentifier::DD}
 };
 
+const map<string, TSToken::ConditionDirective> TSToken::conditionDirectiveMap = {
+    {"IF", TSToken::ConditionDirective::IF},
+    {"ELSE", TSToken::ConditionDirective::ELSE},
+    {"ENDIF", TSToken::ConditionDirective::ENDIF},
+};
+
 const map<string, TSToken::Condition> TSToken::conditionMap = {
     {"EQ", TSToken::Condition::EQ},
     {"NE", TSToken::Condition::NE},
@@ -79,18 +94,6 @@ const map<string, TSToken::Condition> TSToken::conditionMap = {
     {"LE", TSToken::Condition::LE},
     {"GT", TSToken::Condition::GT},
     {"GE", TSToken::Condition::GE}
-};
-
-const map<string, TSToken::Instruction> TSToken::instructionMap = {
-    {"SCASD", TSToken::Instruction::SCASD},
-    {"RCL", TSToken::Instruction::RCL},
-    {"DIV", TSToken::Instruction::DIV},
-    {"OR", TSToken::Instruction::OR},
-    {"CMP", TSToken::Instruction::CMP},
-    {"AND", TSToken::Instruction::AND},
-    {"MOV", TSToken::Instruction::MOV},
-    {"ADD", TSToken::Instruction::ADD},
-    {"JNB", TSToken::Instruction::JNB}
 };
 
 const string TSToken::sizeOperatorStr = "PTR";
@@ -114,6 +117,8 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
             currentToken = TSToken(Type::mathSymbol, mathSymbolMap.find(lexeme)->second);
         else if (directiveMap.count(lexeme))
             currentToken = TSToken(Type::directive, directiveMap.find(lexeme)->second);
+        else if (instructionMap.count(lexeme))
+            currentToken = TSToken(Type::instruction, instructionMap.find(lexeme)->second);
         else if (register8Map.count(lexeme))
             currentToken = TSToken(Type::register8, register8Map.find(lexeme)->second);
         else if (register32Map.count(lexeme))
@@ -124,10 +129,10 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
             currentToken = TSToken(Type::sizeIdentifier, sizeIdentifierMap.find(lexeme)->second);
         else if (dataIdentifierMap.count(lexeme))
             currentToken = TSToken(Type::dataIdentifier, dataIdentifierMap.find(lexeme)->second);
+        else if (conditionDirectiveMap.count(lexeme))
+            currentToken = TSToken(Type::conditionDirective, conditionDirectiveMap.find(lexeme)->second);
         else if (conditionMap.count(lexeme))
             currentToken = TSToken(Type::condition, conditionMap.find(lexeme)->second);
-        else if (instructionMap.count(lexeme))
-            currentToken = TSToken(Type::instruction, instructionMap.find(lexeme)->second);
         else if (isCharQuoteCompatible(lexeme[0]))
             currentToken = TSToken(Type::constantString, lexeme.substr(1, lexeme.size() - 2));
         else if (isCharNumberCompatible(lexeme[0]))

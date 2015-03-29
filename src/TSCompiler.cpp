@@ -27,8 +27,6 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             vector<TSLexemeContainer> lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVectorUncased);
             vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
 
-            //printLexemeTableNative(lexemeContainerVectorUncased, tokenContainerVector);
-
             parse(tokenContainerVector);
         }
         catch (TSCompileError &e)

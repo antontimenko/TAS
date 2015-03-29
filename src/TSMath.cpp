@@ -50,12 +50,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             --bracketCount;
 
         if (bracketCount < 0)
-            throw TSCompileError("extra close bracket",
-                                 it->row,
-                                 it->column,
-                                 it->length);
-
-        
+            throw TSCompileError("extra close bracket is illegal", *it);
 
         if ((bracketCount == 0) && 
             ((it != (mathOperationVector.end() - 1)) || 
@@ -65,7 +60,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
     }
 
     if (bracketCount > 0)
-        throw TSCompileError("unclosed bracket",
+        throw TSCompileError("unclosed bracket is illegal",
                              (mathOperationVector.end() - 1)->row,
                              (mathOperationVector.end() - 1)->column + 1,
                              0);
@@ -75,10 +70,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
         vector<TSMathOperation> newMathOperationVector(mathOperationVector.begin() + 1, mathOperationVector.end() - 1);
         
         if (newMathOperationVector.empty())
-            throw TSCompileError("empty expression",
-                                 mathOperationVector.begin()->row,
-                                 mathOperationVector.begin()->column,
-                                 mathOperationVector.begin()->length);
+            throw TSCompileError("empty expression is illegal", *mathOperationVector.begin());
         
         return mathExpressionComputer(newMathOperationVector);
     }
@@ -90,10 +82,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'+' must have right value",
-                                     operationIt->row,
-                                     operationIt->column,
-                                     operationIt->length);
+                throw TSCompileError("'+' must have right value", *operationIt);
             
             if (newMathOperationVectorLeft.empty())
                 return mathExpressionComputer(newMathOperationVectorRight);
@@ -106,10 +95,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'-' must have right value",
-                                     operationIt->row,
-                                     operationIt->column,
-                                     operationIt->length);
+                throw TSCompileError("'-' must have right value", *operationIt);
             
             if (newMathOperationVectorLeft.empty())
                 return -mathExpressionComputer(newMathOperationVectorRight);
@@ -122,16 +108,10 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'*' must have right value",
-                                     operationIt->row,
-                                     operationIt->column,
-                                     operationIt->length);
+                throw TSCompileError("'*' must have right value", *operationIt);
 
             if (newMathOperationVectorLeft.empty())
-                throw TSCompileError("'*' cannot be unary",
-                                     operationIt->row,
-                                     operationIt->column,
-                                     operationIt->length);
+                throw TSCompileError("'*' cannot be unary", *operationIt);
             
             return mathExpressionComputer(newMathOperationVectorLeft) * mathExpressionComputer(newMathOperationVectorRight);
         }
@@ -141,22 +121,13 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'/' must have right value",
-                                     operationIt->row,
-                                     operationIt->column,
-                                     operationIt->length);
+                throw TSCompileError("'/' must have right value", *operationIt);
 
             if (newMathOperationVectorLeft.empty())
-                throw TSCompileError("'/' cannot be unary",
-                                     operationIt->row,
-                                     operationIt->column,
-                                     operationIt->length);
+                throw TSCompileError("'/' cannot be unary", *operationIt);
 
             if (mathExpressionComputer(newMathOperationVectorRight) == 0)
-                throw TSCompileError("division by zero",
-                                     newMathOperationVectorRight.begin()->row,
-                                     newMathOperationVectorRight.begin()->column,
-                                     newMathOperationVectorRight.begin()->length);
+                throw TSCompileError("division by zero", *newMathOperationVectorRight.begin());
             
             return mathExpressionComputer(newMathOperationVectorLeft) / mathExpressionComputer(newMathOperationVectorRight);
         }
@@ -166,10 +137,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
         }
         else
         {
-            throw TSCompileError("it cannot be like that, asshole",
-                                 operationIt->row,
-                                 operationIt->column,
-                                 operationIt->length);
+            throw TSCompileError("ilegal expression", *operationIt);
         }
     }
 }
