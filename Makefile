@@ -22,11 +22,11 @@ tas: $(addprefix build/,$(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SOURCES))))
 
 build/%.o: src/%.c
 	clang -c -o $@ $< $(CFLAGS)
-	clang -MM -MF dep/$*.d -MT $@ $<
+	clang -MM -MF dep/$*.d -MT $@ $< $(CFLAGS)
 
 build/%.o: src/%.cpp
 	clang++ -c -o $@ $< $(CXXFLAGS)
-	clang++ -MM -MF dep/$*.d -MT $@ $<
+	clang++ -MM -MF dep/$*.d -MT $@ $< $(CXXFLAGS)
 
 -include $(addprefix dep/,$(patsubst %.c,%.d,$(patsubst %.cpp,%.d,$(SOURCES))))
 

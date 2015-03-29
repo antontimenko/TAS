@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <algorithm>
+#include <tuple>
 
 using std::cout;
 using std::endl;
@@ -13,6 +14,7 @@ using std::flush;
 using std::string;
 using std::vector;
 using std::map;
+using std::tuple;
 
 typedef long long longlong;
 typedef unsigned long long ulonglong;

@@ -6,7 +6,7 @@
 #include "TSUniquePtr.h"
 #include <utility>
 
-struct TSTokenContainer;
+class TSTokenContainer;
 
 class TSToken
 {
@@ -155,6 +155,10 @@ public:
 
         return *this;
     }
+    inline bool operator==(const TSToken &token)
+    {
+        return (_type == token._type) && valueP.compareContents(token.valueP);
+    }
     inline Type type() const
     {
         return _type;
@@ -182,12 +186,20 @@ private:
     TSUniquePtr<void> valueP;
 };
 
-struct TSTokenContainer
+class TSTokenContainer
 {
+public:
     size_t row;
     size_t column;
     size_t length;
     TSToken token;
+    inline bool operator==(const TSTokenContainer &tokenContainer)
+    {
+        return (row == tokenContainer.row) &&
+               (column == tokenContainer.column) &&
+               (length == tokenContainer.length) &&
+               (token == tokenContainer.token);
+    }
 };
 
 #endif

@@ -23,12 +23,11 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
 
         try
         {
-            vector<TSLexemeContainer> lexemeContainerVector = constructLexemeContainerVector(sourceFileContents);
-            lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVector);
-
+            vector<TSLexemeContainer> lexemeContainerVectorUncased = constructLexemeContainerVector(sourceFileContents);
+            vector<TSLexemeContainer> lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVectorUncased);
             vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
 
-            //printLexemeTable(lexemeContainerVector, tokenContainerVector);
+            //printLexemeTableNative(lexemeContainerVectorUncased, tokenContainerVector);
 
             parse(tokenContainerVector);
         }

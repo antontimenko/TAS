@@ -2,7 +2,6 @@
 #define _TSMATH_H_
 
 #include "TSGlobal.h"
-#include "TSParser.h"
 
 enum TSMathOperationKind
 {
@@ -24,7 +23,6 @@ struct TSMathOperation
     size_t length;
 };
 
-vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap);
 longlong mathExpressionComputer(vector<TSMathOperation> mathContainerVector);
 
 #endif
