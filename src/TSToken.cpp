@@ -99,9 +99,9 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
 {
     vector<TSTokenContainer> tokenContainerVector;
 
-    for (size_t i = 0; i < lexemeContainerVector.size(); ++i)
+    for (auto it = lexemeContainerVector.begin(); it != lexemeContainerVector.end(); ++it)
     {
-        const TSLexemeContainer &lexemeContainer = lexemeContainerVector[i];
+        const TSLexemeContainer &lexemeContainer = *it;
         const string &lexeme = lexemeContainer.lexeme;
         
         TSToken currentToken;
@@ -175,21 +175,11 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
         else
             currentToken = TSToken(Type::userIdentifier, lexeme);
 
-        tokenContainerVector.push_back({lexemeContainerVector[i].row,
-                                        lexemeContainerVector[i].column,
-                                        lexemeContainerVector[i].lexeme.size(),
+        tokenContainerVector.push_back({it->row,
+                                        it->column,
+                                        it->lexeme.size(),
                                         currentToken});
     }
 
     return tokenContainerVector;
-}
-
-bool TSToken::isMathSymbolRightCompatible(TSToken token)
-{
-    return (token.type() == Type::mathSymbol) && 
-           ((token.value<MathSymbol>() == MathSymbol::PLUS) ||
-            (token.value<MathSymbol>() == MathSymbol::MINUS) ||
-            (token.value<MathSymbol>() == MathSymbol::MULTIPLY) ||
-            (token.value<MathSymbol>() == MathSymbol::DIVIDE) ||
-            (token.value<MathSymbol>() == MathSymbol::BRACKET_OPEN));
 }

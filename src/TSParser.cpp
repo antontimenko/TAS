@@ -10,9 +10,9 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
 {
     vector<TSMathOperation> mathOperationVector;
 
-    for (size_t i = 0; i < tokenContainerVector.size(); ++i)
+    for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it)
     {
-        const TSTokenContainer &tokenContainer = tokenContainerVector[i];
+        const TSTokenContainer &tokenContainer = *it;
         const TSToken &token = tokenContainer.token;
 
         TSMathOperation currentOperation;
@@ -71,13 +71,18 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
     return mathOperationVector;
 }
 
+inline longlong computeMath(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
+{
+    return mathExpressionComputer(convertToMathOperationVector(tokenContainerVector, equMap));
+}
+
 vector<TSTokenContainer> excludeUsedTokens(const vector<TSTokenContainer> &base, const vector<TSTokenContainer> &excludes)
 {
     vector<TSTokenContainer> newBase = base;
 
-    for (size_t i = 0; i < excludes.size(); ++i)
+    for (auto it = excludes.begin(); it != excludes.end(); ++it)
     {
-        auto elem = std::find(newBase.begin(), newBase.end(), excludes[i]);
+        auto elem = std::find(newBase.begin(), newBase.end(), *it);
         if (elem != newBase.end())
         {
             newBase.erase(elem);
@@ -87,39 +92,52 @@ vector<TSTokenContainer> excludeUsedTokens(const vector<TSTokenContainer> &base,
     return newBase;
 }
 
+size_t getMathTokenSequence(const vector<TSTokenContainer> &tokenContainerVector, vector<TSTokenContainer>::const_iterator it)
+{
+    auto requireRightParam = [](const TSToken &token) -> bool {
+        return (token.type() == TSToken::Type::mathSymbol) &&
+               ((token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::PLUS) ||
+                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::MINUS) ||
+                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::MULTIPLY) ||
+                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::DIVIDE) ||
+                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::BRACKET_OPEN));
+    };
+
+    size_t i = 0;
+    
+    while ((it != tokenContainerVector.end()) &&
+           ((it->token.type() == TSToken::Type::mathSymbol) ||
+            ((it->token.type() == TSToken::Type::userIdentifier) &&
+             ((requireRightParam((it - 1)->token)) ||
+              (i == 0))) ||
+            ((it->token.type() == TSToken::Type::constantNumber) &&
+             ((requireRightParam((it - 1)->token)) ||
+              (i == 0)))))
+    {
+        ++it;
+        ++i;
+    }
+
+    return i;
+}
+
 tuple<map<string, longlong>, vector<TSTokenContainer>> constructEquMap(const vector<TSTokenContainer> &tokenContainerVector)
 {
     vector<TSTokenContainer> excludes;
 
     map<string, vector<TSTokenContainer>> equMapUnprocessed;
 
-    for (size_t i = 0; i < tokenContainerVector.size(); ++i)
+    for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it)
     {
-        const TSTokenContainer &tokenContainer = tokenContainerVector[i];
+        const TSTokenContainer &tokenContainer = *it;
         const TSToken &token = tokenContainer.token;
 
         if ((token.type() == TSToken::Type::directive) && (token.value<TSToken::Directive>() == TSToken::Directive::EQU))
         {
             excludes.push_back(tokenContainer);
 
-            vector<TSTokenContainer> currentEquTokenContainer;
-
-            size_t j = i + 1;
-            while ((j < tokenContainerVector.size()) && 
-                   ((tokenContainerVector[j].token.type() == TSToken::Type::mathSymbol) || 
-                    ((tokenContainerVector[j].token.type() == TSToken::Type::userIdentifier) &&
-                     ((TSToken::isMathSymbolRightCompatible(tokenContainerVector[j - 1].token)) || 
-                      (currentEquTokenContainer.empty()))) ||
-                    ((tokenContainerVector[j].token.type() == TSToken::Type::constantNumber) &&
-                     ((TSToken::isMathSymbolRightCompatible(tokenContainerVector[j - 1].token)) || 
-                      (currentEquTokenContainer.empty())))))
-            {
-                excludes.push_back(tokenContainerVector[j]);
-
-                currentEquTokenContainer.push_back(tokenContainerVector[j]);
-
-                ++j;
-            }
+            size_t equTokenNum = getMathTokenSequence(tokenContainerVector, it + 1);
+            vector<TSTokenContainer> currentEquTokenContainer(it + 1, it + equTokenNum + 1);
 
             if (currentEquTokenContainer.empty())
                 throw TSCompileError("EQU must have an integer value",
@@ -127,21 +145,22 @@ tuple<map<string, longlong>, vector<TSTokenContainer>> constructEquMap(const vec
                                      tokenContainer.column,
                                      tokenContainer.length);
 
-            if ((i == 0) || (tokenContainerVector[i - 1].token.type() != TSToken::Type::userIdentifier))
+            if ((it == tokenContainerVector.begin()) ||
+                ((it - 1)->token.type() != TSToken::Type::userIdentifier))
                 throw TSCompileError("EQU must define an user identifier",
                                      tokenContainer.row,
                                      tokenContainer.column,
                                      tokenContainer.length);
 
-            excludes.push_back(tokenContainerVector[i - 1]);
+            excludes.push_back(*(it - 1));
 
-            if (equMapUnprocessed.count(tokenContainerVector[i - 1].token.value<string>()))
+            if (equMapUnprocessed.count((it - 1)->token.value<string>()))
                 throw TSCompileError("redefinition of EQU constant",
                                      tokenContainer.row,
                                      tokenContainer.column,
                                      tokenContainer.length);
 
-            equMapUnprocessed[tokenContainerVector[i - 1].token.value<string>()] = currentEquTokenContainer;
+            equMapUnprocessed[(it - 1)->token.value<string>()] = currentEquTokenContainer;
         }
     }
 
@@ -152,9 +171,9 @@ tuple<map<string, longlong>, vector<TSTokenContainer>> constructEquMap(const vec
         {
             vector<TSTokenContainer> currentEquTokenContainer(equMapUnprocessed[equName]);
 
-            for (size_t i = 0; i < currentEquTokenContainer.size(); ++i)
+            for (auto it = currentEquTokenContainer.begin(); it != currentEquTokenContainer.end(); ++it)
             {
-                const TSTokenContainer &tokenContainer = currentEquTokenContainer[i];
+                const TSTokenContainer &tokenContainer = *it;
                 const TSToken &token = tokenContainer.token;
                 
                 if (token.type() == TSToken::Type::userIdentifier)
@@ -181,7 +200,7 @@ tuple<map<string, longlong>, vector<TSTokenContainer>> constructEquMap(const vec
                 }
             }
 
-            equMap[equName] = mathExpressionComputer(convertToMathOperationVector(equMapUnprocessed[equName], equMap));
+            equMap[equName] = computeMath(equMapUnprocessed[equName], equMap);
         }
     };
 

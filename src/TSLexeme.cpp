@@ -154,23 +154,19 @@ vector<TSLexemeContainer> convertLexemeContainerVectorToUpperCase(vector<TSLexem
 {
     vector<TSLexemeContainer> newLexemeContainerVector;
 
-    for (size_t i = 0; i < lexemeContainerVector.size(); ++i)
+    for (auto it = lexemeContainerVector.begin(); it != lexemeContainerVector.end(); ++it)
     {
-        if (!isCharQuoteCompatible(lexemeContainerVector[i].lexeme[0]) && !isCharQuoteCompatible(lexemeContainerVector[i].lexeme[lexemeContainerVector[i].lexeme.size() - 1]))
+        if (!isCharQuoteCompatible(it->lexeme[0]) && !isCharQuoteCompatible(it->lexeme[it->lexeme.size() - 1]))
         {
             string currentLexeme;
             
-            for (size_t j = 0; j < lexemeContainerVector[i].lexeme.size(); ++j)
-            {
-                currentLexeme += (char)toupper(lexemeContainerVector[i].lexeme[j]);
-            }
+            for (size_t j = 0; j < it->lexeme.size(); ++j)
+                currentLexeme += (char)toupper(it->lexeme[j]);
 
-            newLexemeContainerVector.push_back({lexemeContainerVector[i].row, lexemeContainerVector[i].column, currentLexeme});
+            newLexemeContainerVector.push_back({it->row, it->column, currentLexeme});
         }
         else
-        {
-            newLexemeContainerVector.push_back(lexemeContainerVector[i]);
-        }
+            newLexemeContainerVector.push_back(*it);
     }
 
     return newLexemeContainerVector;

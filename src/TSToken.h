@@ -180,7 +180,6 @@ public:
     static const map<string, Instruction> instructionMap;
     static const string sizeOperatorStr;
     static vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
-    static bool isMathSymbolRightCompatible(TSToken token);
 private:
     Type _type;
     TSUniquePtr<void> valueP;
