@@ -119,53 +119,59 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector)
 
         switch (token.type())
         {
-        case TSToken::Type::userIdentifier:
-            printf("%-20s | %s\n", "userIdentifier", token.value<string>().c_str());
+        case TSToken::Type::USER_IDENTIFIER:
+            printf("%-20s | %s\n", "User Identifier", token.value<string>().c_str());
             break;
-        case TSToken::Type::singleChar:
-            printf("%-20s | %s\n", "singleChar", findByValue(TSToken::singleCharMap, token.value<TSToken::SingleChar>())->first.c_str());
+        case TSToken::Type::SINGLE_CHAR:
+            printf("%-20s | %s\n", "Single Char", findByValue(TSToken::singleCharMap, token.value<TSToken::SingleChar>())->first.c_str());
             break;
-        case TSToken::Type::mathSymbol:
-            printf("%-20s | %s\n", "mathSymbol", findByValue(TSToken::mathSymbolMap, token.value<TSToken::MathSymbol>())->first.c_str());
+        case TSToken::Type::MATH_SYMBOL:
+            printf("%-20s | %s\n", "Math Symbol", findByValue(TSToken::mathSymbolMap, token.value<TSToken::MathSymbol>())->first.c_str());
             break;
-        case TSToken::Type::directive:
-            printf("%-20s | %s\n", "directive", findByValue(TSToken::directiveMap, token.value<TSToken::Directive>())->first.c_str());
+        case TSToken::Type::SEGMENT_DIRECTIVE:
+            printf("%-20s | %s\n", "Segment Directive", findByValue(TSToken::segmentDirectiveMap, token.value<TSToken::SegmentDirective>())->first.c_str());
             break;
-        case TSToken::Type::instruction:
-            printf("%-20s | %s\n", "instruction", findByValue(TSToken::instructionMap, token.value<TSToken::Instruction>())->first.c_str());
+        case TSToken::Type::INSTRUCTION:
+            printf("%-20s | %s\n", "Instruction", findByValue(TSToken::instructionMap, token.value<TSToken::Instruction>())->first.c_str());
             break;
-        case TSToken::Type::register8:
-            printf("%-20s | %s\n", "register8", findByValue(TSToken::register8Map, token.value<TSToken::Register8>())->first.c_str());
+        case TSToken::Type::REGISTER_8:
+            printf("%-20s | %s\n", "Register 8", findByValue(TSToken::register8Map, token.value<TSToken::Register8>())->first.c_str());
             break;
-        case TSToken::Type::register32:
-            printf("%-20s | %s\n", "register32", findByValue(TSToken::register32Map, token.value<TSToken::Register32>())->first.c_str());
+        case TSToken::Type::REGISTER_32:
+            printf("%-20s | %s\n", "Register 32", findByValue(TSToken::register32Map, token.value<TSToken::Register32>())->first.c_str());
             break;
-        case TSToken::Type::registerSegment:
-            printf("%-20s | %s\n", "registerSegment", findByValue(TSToken::registerSegmentMap, token.value<TSToken::RegisterSegment>())->first.c_str());
+        case TSToken::Type::REGISTER_SEGMENT:
+            printf("%-20s | %s\n", "Register Segment", findByValue(TSToken::registerSegmentMap, token.value<TSToken::RegisterSegment>())->first.c_str());
             break;
-        case TSToken::Type::sizeOperator:
-            printf("%-20s | %s\n", "sizeOperator", TSToken::sizeOperatorStr.c_str());
+        case TSToken::Type::SIZE_IDENTIFIER:
+            printf("%-20s | %s\n", "Size Identifier", findByValue(TSToken::sizeIdentifierMap, token.value<TSToken::SizeIdentifier>())->first.c_str());
             break;
-        case TSToken::Type::sizeIdentifier:
-            printf("%-20s | %s\n", "sizeIdentifier", findByValue(TSToken::sizeIdentifierMap, token.value<TSToken::SizeIdentifier>())->first.c_str());
+        case TSToken::Type::DATA_IDENTIFIER:
+            printf("%-20s | %s\n", "Data Identifier", findByValue(TSToken::dataIdentifierMap, token.value<TSToken::DataIdentifier>())->first.c_str());
             break;
-        case TSToken::Type::dataIdentifier:
-            printf("%-20s | %s\n", "dataIdentifier", findByValue(TSToken::dataIdentifierMap, token.value<TSToken::DataIdentifier>())->first.c_str());
+        case TSToken::Type::CONSTANT_NUMBER:
+            printf("%-20s | %lli\n", "Constant Number", token.value<longlong>());
             break;
-        case TSToken::Type::constantNumber:
-            printf("%-20s | %lli\n", "constantNumber", token.value<longlong>());
+        case TSToken::Type::CONSTANT_STRING:
+            printf("%-20s | %s\n", "Constant String", token.value<string>().c_str());
             break;
-        case TSToken::Type::constantString:
-            printf("%-20s | %s\n", "constantString", token.value<string>().c_str());
+        case TSToken::Type::CONDITION_DIRECTIVE:
+            printf("%-20s | %s\n", "Condition Directive", findByValue(TSToken::conditionDirectiveMap, token.value<TSToken::ConditionDirective>())->first.c_str());
             break;
-        case TSToken::Type::conditionDirective:
-            printf("%-20s | %s\n", "conditionDirective", findByValue(TSToken::conditionDirectiveMap, token.value<TSToken::ConditionDirective>())->first.c_str());
+        case TSToken::Type::CONDITION:
+            printf("%-20s | %s\n", "Condition", findByValue(TSToken::conditionMap, token.value<TSToken::Condition>())->first.c_str());
             break;
-        case TSToken::Type::condition:
-            printf("%-20s | %s\n", "condition", findByValue(TSToken::conditionMap, token.value<TSToken::Condition>())->first.c_str());
+        case TSToken::Type::SIZE_OPERATOR:
+            printf("%-20s | %s\n", "Size Operator", TSToken::sizeOperatorStr.c_str());
+            break;
+        case TSToken::Type::EQU_DIRECTIVE:
+            printf("%-20s | %s\n", "EQU Directive", TSToken::equDirectiveStr.c_str());
+            break;
+        case TSToken::Type::END_DIRECTIVE:
+            printf("%-20s | %s\n", "END Directive", TSToken::endDirectiveStr.c_str());
             break;
         default:
-            printf("%-20s | %s\n", "null", "NULL");
+            printf("%-20s | %s\n", "Undefined", "Undefined");
             break;
         }
     }
@@ -194,53 +200,59 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const
 
         switch (tokenContainerVector[i].token.type())
         {
-        case TSToken::Type::userIdentifier:
-            printf("%-20s | %s\n", "userIdentifier", lexeme.c_str());
+        case TSToken::Type::USER_IDENTIFIER:
+            printf("%-20s | %s\n", "User Identifier", lexeme.c_str());
             break;
-        case TSToken::Type::singleChar:
-            printf("%-20s | %s\n", "singleChar", lexeme.c_str());
+        case TSToken::Type::SINGLE_CHAR:
+            printf("%-20s | %s\n", "Single Char", lexeme.c_str());
             break;
-        case TSToken::Type::mathSymbol:
-            printf("%-20s | %s\n", "mathSymbol", lexeme.c_str());
+        case TSToken::Type::MATH_SYMBOL:
+            printf("%-20s | %s\n", "Math Symbol", lexeme.c_str());
             break;
-        case TSToken::Type::directive:
-            printf("%-20s | %s\n", "directive", lexeme.c_str());
+        case TSToken::Type::SEGMENT_DIRECTIVE:
+            printf("%-20s | %s\n", "Segment Directive", lexeme.c_str());
             break;
-        case TSToken::Type::instruction:
-            printf("%-20s | %s\n", "instruction", lexeme.c_str());
+        case TSToken::Type::INSTRUCTION:
+            printf("%-20s | %s\n", "Instruction", lexeme.c_str());
             break;
-        case TSToken::Type::register8:
-            printf("%-20s | %s\n", "register8", lexeme.c_str());
+        case TSToken::Type::REGISTER_8:
+            printf("%-20s | %s\n", "Register 8", lexeme.c_str());
             break;
-        case TSToken::Type::register32:
-            printf("%-20s | %s\n", "register32", lexeme.c_str());
+        case TSToken::Type::REGISTER_32:
+            printf("%-20s | %s\n", "Register 32", lexeme.c_str());
             break;
-        case TSToken::Type::registerSegment:
-            printf("%-20s | %s\n", "registerSegment", lexeme.c_str());
+        case TSToken::Type::REGISTER_SEGMENT:
+            printf("%-20s | %s\n", "Register Segment", lexeme.c_str());
             break;
-        case TSToken::Type::sizeOperator:
-            printf("%-20s | %s\n", "sizeOperator", lexeme.c_str());
+        case TSToken::Type::SIZE_IDENTIFIER:
+            printf("%-20s | %s\n", "Size Identifier", lexeme.c_str());
             break;
-        case TSToken::Type::sizeIdentifier:
-            printf("%-20s | %s\n", "sizeIdentifier", lexeme.c_str());
+        case TSToken::Type::DATA_IDENTIFIER:
+            printf("%-20s | %s\n", "Data Identifier", lexeme.c_str());
             break;
-        case TSToken::Type::dataIdentifier:
-            printf("%-20s | %s\n", "dataIdentifier", lexeme.c_str());
+        case TSToken::Type::CONSTANT_NUMBER:
+            printf("%-20s | %s\n", "Constant Number", lexeme.c_str());
             break;
-        case TSToken::Type::constantNumber:
-            printf("%-20s | %s\n", "constantNumber", lexeme.c_str());
+        case TSToken::Type::CONSTANT_STRING:
+            printf("%-20s | %s\n", "Constant String", lexeme.c_str());
             break;
-        case TSToken::Type::constantString:
-            printf("%-20s | %s\n", "constantString", lexeme.c_str());
+        case TSToken::Type::CONDITION_DIRECTIVE:
+            printf("%-20s | %s\n", "Condition Directive", lexeme.c_str());
             break;
-        case TSToken::Type::conditionDirective:
-            printf("%-20s | %s\n", "conditionDirective", lexeme.c_str());
+        case TSToken::Type::CONDITION:
+            printf("%-20s | %s\n", "Condition", lexeme.c_str());
             break;
-        case TSToken::Type::condition:
-            printf("%-20s | %s\n", "condition", lexeme.c_str());
+        case TSToken::Type::SIZE_OPERATOR:
+            printf("%-20s | %s\n", "Size Operator", lexeme.c_str());
+            break;
+        case TSToken::Type::EQU_DIRECTIVE:
+            printf("%-20s | %s\n", "EQU Directive", lexeme.c_str());
+            break;
+        case TSToken::Type::END_DIRECTIVE:
+            printf("%-20s | %s\n", "END Directive", lexeme.c_str());
             break;
         default:
-            printf("%-20s | %s\n", "null", lexeme.c_str());
+            printf("%-20s | %s\n", "Undefined", "Undefined");
             break;
         }
     }

@@ -19,11 +19,9 @@ const map<string, TSToken::MathSymbol> TSToken::mathSymbolMap = {
     {")", TSToken::MathSymbol::BRACKET_CLOSE},
 };
 
-const map<string, TSToken::Directive> TSToken::directiveMap = {
-    {"SEGMENT", TSToken::Directive::SEGMENT},
-    {"ENDS", TSToken::Directive::ENDS},
-    {"EQU", TSToken::Directive::EQU},
-    {"END", TSToken::Directive::END}
+const map<string, TSToken::SegmentDirective> TSToken::segmentDirectiveMap = {
+    {"SEGMENT", TSToken::SegmentDirective::SEGMENT},
+    {"ENDS", TSToken::SegmentDirective::ENDS}
 };
 
 const map<string, TSToken::Instruction> TSToken::instructionMap = {
@@ -97,6 +95,8 @@ const map<string, TSToken::Condition> TSToken::conditionMap = {
 };
 
 const string TSToken::sizeOperatorStr = "PTR";
+const string TSToken::equDirectiveStr = "EQU";
+const string TSToken::endDirectiveStr = "END";
 
 vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector)
 {
@@ -110,31 +110,35 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
         TSToken currentToken;
 
         if (lexeme == sizeOperatorStr)
-            currentToken = TSToken(Type::sizeOperator);
+            currentToken = TSToken(Type::SIZE_OPERATOR);
+        else if (lexeme == equDirectiveStr)
+            currentToken = TSToken(Type::EQU_DIRECTIVE);
+        else if (lexeme == endDirectiveStr)
+            currentToken = TSToken(Type::END_DIRECTIVE);
         else if (singleCharMap.count(lexeme))
-            currentToken = TSToken(Type::singleChar, singleCharMap.find(lexeme)->second);
+            currentToken = TSToken(Type::SINGLE_CHAR, singleCharMap.find(lexeme)->second);
         else if (mathSymbolMap.count(lexeme))
-            currentToken = TSToken(Type::mathSymbol, mathSymbolMap.find(lexeme)->second);
-        else if (directiveMap.count(lexeme))
-            currentToken = TSToken(Type::directive, directiveMap.find(lexeme)->second);
+            currentToken = TSToken(Type::MATH_SYMBOL, mathSymbolMap.find(lexeme)->second);
+        else if (segmentDirectiveMap.count(lexeme))
+            currentToken = TSToken(Type::SEGMENT_DIRECTIVE, segmentDirectiveMap.find(lexeme)->second);
         else if (instructionMap.count(lexeme))
-            currentToken = TSToken(Type::instruction, instructionMap.find(lexeme)->second);
+            currentToken = TSToken(Type::INSTRUCTION, instructionMap.find(lexeme)->second);
         else if (register8Map.count(lexeme))
-            currentToken = TSToken(Type::register8, register8Map.find(lexeme)->second);
+            currentToken = TSToken(Type::REGISTER_8, register8Map.find(lexeme)->second);
         else if (register32Map.count(lexeme))
-            currentToken = TSToken(Type::register32, register32Map.find(lexeme)->second);
+            currentToken = TSToken(Type::REGISTER_32, register32Map.find(lexeme)->second);
         else if (registerSegmentMap.count(lexeme))
-            currentToken = TSToken(Type::registerSegment, registerSegmentMap.find(lexeme)->second);
+            currentToken = TSToken(Type::REGISTER_SEGMENT, registerSegmentMap.find(lexeme)->second);
         else if (sizeIdentifierMap.count(lexeme))
-            currentToken = TSToken(Type::sizeIdentifier, sizeIdentifierMap.find(lexeme)->second);
+            currentToken = TSToken(Type::SIZE_IDENTIFIER, sizeIdentifierMap.find(lexeme)->second);
         else if (dataIdentifierMap.count(lexeme))
-            currentToken = TSToken(Type::dataIdentifier, dataIdentifierMap.find(lexeme)->second);
+            currentToken = TSToken(Type::DATA_IDENTIFIER, dataIdentifierMap.find(lexeme)->second);
         else if (conditionDirectiveMap.count(lexeme))
-            currentToken = TSToken(Type::conditionDirective, conditionDirectiveMap.find(lexeme)->second);
+            currentToken = TSToken(Type::CONDITION_DIRECTIVE, conditionDirectiveMap.find(lexeme)->second);
         else if (conditionMap.count(lexeme))
-            currentToken = TSToken(Type::condition, conditionMap.find(lexeme)->second);
+            currentToken = TSToken(Type::CONDITION, conditionMap.find(lexeme)->second);
         else if (isCharQuoteCompatible(lexeme[0]))
-            currentToken = TSToken(Type::constantString, lexeme.substr(1, lexeme.size() - 2));
+            currentToken = TSToken(Type::CONSTANT_STRING, lexeme.substr(1, lexeme.size() - 2));
         else if (isCharNumberCompatible(lexeme[0]))
         {
             longlong number;
@@ -175,10 +179,10 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
                 throw TSCompileError("Invalid numeric constant", lexemeContainer.row, lexemeContainer.column, lexeme.size());
             }
 
-            currentToken = TSToken(Type::constantNumber, number);
+            currentToken = TSToken(Type::CONSTANT_NUMBER, number);
         }
         else
-            currentToken = TSToken(Type::userIdentifier, lexeme);
+            currentToken = TSToken(Type::USER_IDENTIFIER, lexeme);
 
         tokenContainerVector.push_back({it->row,
                                         it->column,

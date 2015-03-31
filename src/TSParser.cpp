@@ -17,7 +17,7 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
 
         TSMathOperation currentOperation;
 
-        if (token.type() == TSToken::Type::mathSymbol)
+        if (token.type() == TSToken::Type::MATH_SYMBOL)
         {
             TSMathOperationKind currentOperationKind;
             switch (token.value<TSToken::MathSymbol>())
@@ -48,7 +48,7 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
                                 tokenContainer.column,
                                 tokenContainer.length};
         }
-        else if (token.type() == TSToken::Type::userIdentifier)
+        else if (token.type() == TSToken::Type::USER_IDENTIFIER)
         {
             currentOperation = {TSMathOperationKind::CONSTANT,
                                 equMap.find(token.value<string>())->second,
@@ -56,7 +56,7 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
                                 tokenContainer.column,
                                 tokenContainer.length};
         }
-        else if (token.type() == TSToken::Type::constantNumber)
+        else if (token.type() == TSToken::Type::CONSTANT_NUMBER)
         {
             currentOperation = {TSMathOperationKind::CONSTANT,
                                 token.value<longlong>(),
@@ -90,10 +90,10 @@ vector<TSTokenContainer> excludeUsedTokens(const vector<TSTokenContainer> &base,
     return newBase;
 }
 
-vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
+auto getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
 {
     auto requireRightParam = [](const TSToken &token) -> bool {
-        return (token.type() == TSToken::Type::mathSymbol) &&
+        return (token.type() == TSToken::Type::MATH_SYMBOL) &&
                ((token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::PLUS) ||
                 (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::MINUS) ||
                 (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::MULTIPLY) ||
@@ -103,11 +103,11 @@ vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenCont
     
     auto it = begin;
     while ((it != end) &&
-           ((it->token.type() == TSToken::Type::mathSymbol) ||
-            ((it->token.type() == TSToken::Type::userIdentifier) &&
+           ((it->token.type() == TSToken::Type::MATH_SYMBOL) ||
+            ((it->token.type() == TSToken::Type::USER_IDENTIFIER) &&
              ((requireRightParam((it - 1)->token)) ||
               (it == begin))) ||
-            ((it->token.type() == TSToken::Type::constantNumber) &&
+            ((it->token.type() == TSToken::Type::CONSTANT_NUMBER) &&
              ((requireRightParam((it - 1)->token)) ||
               (it == begin)))))
     {
@@ -117,7 +117,7 @@ vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenCont
     return it;
 }
 
-tuple<map<string, longlong>, vector<TSTokenContainer>> processEQUs(const vector<TSTokenContainer> &tokenContainerVector)
+auto processEQUs(const vector<TSTokenContainer> &tokenContainerVector)
 {
     vector<TSTokenContainer> excludes;
 
@@ -128,7 +128,7 @@ tuple<map<string, longlong>, vector<TSTokenContainer>> processEQUs(const vector<
         const TSTokenContainer &tokenContainer = *it;
         const TSToken &token = tokenContainer.token;
 
-        if ((token.type() == TSToken::Type::directive) && (token.value<TSToken::Directive>() == TSToken::Directive::EQU))
+        if (token.type() == TSToken::Type::EQU_DIRECTIVE)
         {
             excludes.push_back(tokenContainer);
 
@@ -140,7 +140,7 @@ tuple<map<string, longlong>, vector<TSTokenContainer>> processEQUs(const vector<
                 throw TSCompileError("EQU must have an integer value", tokenContainer);
 
             if ((it == tokenContainerVector.begin()) ||
-                ((it - 1)->token.type() != TSToken::Type::userIdentifier))
+                ((it - 1)->token.type() != TSToken::Type::USER_IDENTIFIER))
                 throw TSCompileError("EQU must define an user identifier", tokenContainer);
 
             excludes.push_back(*(it - 1));
@@ -164,7 +164,7 @@ tuple<map<string, longlong>, vector<TSTokenContainer>> processEQUs(const vector<
                 const TSTokenContainer &tokenContainer = *it;
                 const TSToken &token = tokenContainer.token;
                 
-                if (token.type() == TSToken::Type::userIdentifier)
+                if (token.type() == TSToken::Type::USER_IDENTIFIER)
                 {
                     if (equMapUnprocessed.count(token.value<string>()))
                     {
@@ -210,7 +210,7 @@ vector<TSTokenContainer> processIFs(const vector<TSTokenContainer> &tokenContain
         ItType ifIt = end;
         while (it != end)
         {
-            if (it->token.type() == TSToken::Type::conditionDirective)
+            if (it->token.type() == TSToken::Type::CONDITION_DIRECTIVE)
             {
                 if (it->token.value<TSToken::ConditionDirective>() == TSToken::ConditionDirective::IF)
                 {
@@ -246,7 +246,7 @@ vector<TSTokenContainer> processIFs(const vector<TSTokenContainer> &tokenContain
                         excludes.insert(excludes.end(), jt, leftExprEnd);
                         jt = leftExprEnd;
 
-                        if (jt->token.type() != TSToken::Type::condition)
+                        if (jt->token.type() != TSToken::Type::CONDITION)
                             throw TSCompileError("there must be condition after expression", *(jt - 1));
 
                         TSToken::Condition condition = jt->token.value<TSToken::Condition>();
@@ -291,7 +291,7 @@ vector<TSTokenContainer> processIFs(const vector<TSTokenContainer> &tokenContain
                     }
                 }
             }
-            else if (it->token.type() == TSToken::Type::condition)
+            else if (it->token.type() == TSToken::Type::CONDITION)
             {
                 if (ifCount == 0)
                     throw TSCompileError("conditions without IF is illegal", *it);
@@ -311,7 +311,7 @@ vector<TSTokenContainer> processIFs(const vector<TSTokenContainer> &tokenContain
         while (it != end)
         {
             
-            if (it->token.type() == TSToken::Type::conditionDirective)
+            if (it->token.type() == TSToken::Type::CONDITION_DIRECTIVE)
             {
                 if (it->token.value<TSToken::ConditionDirective>() == TSToken::ConditionDirective::IF)
                     ++ifCount;
@@ -364,6 +364,4 @@ void parse(const vector<TSTokenContainer> &tokenContainerVector)
 {
     auto firstPhaseResult = processEQUs(tokenContainerVector);
     auto secondPhaseResult = processIFs(std::get<1>(firstPhaseResult), std::get<0>(firstPhaseResult));
-    printTokenTable(secondPhaseResult);
-    //printEquTable(std::get<0>(firstPhaseResult));
 }

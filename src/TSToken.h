@@ -13,22 +13,24 @@ class TSToken
 public:
     enum class Type
     {
-        null,
-        userIdentifier,
-        singleChar,
-        mathSymbol,
-        directive,
-        instruction,
-        register8,
-        register32,
-        registerSegment,
-        sizeOperator,
-        sizeIdentifier,
-        dataIdentifier,
-        constantNumber,
-        constantString,
-        conditionDirective,
-        condition
+        UNDEFINED,
+        USER_IDENTIFIER,
+        SINGLE_CHAR,
+        MATH_SYMBOL,
+        SEGMENT_DIRECTIVE,
+        INSTRUCTION,
+        REGISTER_8,
+        REGISTER_32,
+        REGISTER_SEGMENT,
+        SIZE_IDENTIFIER,
+        DATA_IDENTIFIER,
+        CONSTANT_NUMBER,
+        CONSTANT_STRING,
+        CONDITION_DIRECTIVE,
+        CONDITION,
+        SIZE_OPERATOR,
+        EQU_DIRECTIVE,
+        END_DIRECTIVE
     };
 
     enum class SingleChar
@@ -49,12 +51,10 @@ public:
         BRACKET_CLOSE
     };
 
-    enum class Directive
+    enum class SegmentDirective
     {
         SEGMENT,
-        ENDS,
-        EQU,
-        END
+        ENDS
     };
 
     enum class Instruction
@@ -145,7 +145,7 @@ public:
     {
     }
     inline TSToken() :
-        TSToken(Type::null)
+        TSToken(Type::UNDEFINED)
     {
     }
     inline TSToken(const TSToken &token) :
@@ -171,7 +171,7 @@ public:
     }
     static const map<string, SingleChar> singleCharMap;
     static const map<string, MathSymbol> mathSymbolMap;
-    static const map<string, Directive> directiveMap;
+    static const map<string, SegmentDirective> segmentDirectiveMap;
     static const map<string, Instruction> instructionMap;
     static const map<string, Register8> register8Map;
     static const map<string, Register32> register32Map;
@@ -181,6 +181,8 @@ public:
     static const map<string, ConditionDirective> conditionDirectiveMap;
     static const map<string, Condition> conditionMap;
     static const string sizeOperatorStr;
+    static const string equDirectiveStr;
+    static const string endDirectiveStr;
     static vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
 private:
     Type _type;

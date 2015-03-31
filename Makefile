@@ -14,8 +14,7 @@ SOURCES= \
 all: build_dir tas
 
 build_dir:
-	mkdir -p build
-	mkdir -p dep
+	mkdir -p build dep
 
 tas: $(addprefix build/,$(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SOURCES))))
 	clang++ -o build/$@ $^ $(LIBS)
@@ -31,5 +30,4 @@ build/%.o: src/%.cpp
 -include $(addprefix dep/,$(patsubst %.c,%.d,$(patsubst %.cpp,%.d,$(SOURCES))))
 
 clean:
-	rm -Rf build
-	rm -Rf dep
+	rm -Rf build dep
