@@ -1,4 +1,4 @@
-#include "TSParser.h"
+#include "TSPreprocessor.h"
 
 #include "TSException.h"
 #include "TSMath.h"
@@ -360,8 +360,71 @@ vector<TSTokenContainer> processIFs(const vector<TSTokenContainer> &tokenContain
     return excludeUsedTokens(tokenContainerVector, excludes);
 }
 
-void parse(const vector<TSTokenContainer> &tokenContainerVector)
+vector<TSSegmentContainer> processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector)
 {
-    auto firstPhaseResult = processEQUs(tokenContainerVector);
-    auto secondPhaseResult = processIFs(std::get<1>(firstPhaseResult), std::get<0>(firstPhaseResult));
+    vector<TSSegmentContainer> segmentContainerVector;
+
+    vector<TSTokenContainer> excludes;
+
+    auto segmentStartIt = tokenContainerVector.end();
+    for (auto it = tokenContainerVector.begin(); it < tokenContainerVector.end(); ++it)
+    {
+        if (it->token.type() == TSToken::Type::SEGMENT_DIRECTIVE)
+        {
+            if (it->token.value<TSToken::SegmentDirective>() == TSToken::SegmentDirective::SEGMENT)
+            {
+                if (segmentStartIt == tokenContainerVector.end())
+                {
+                    if ((it != tokenContainerVector.begin()) &&
+                        ((it - 1)->token.type() == TSToken::Type::USER_IDENTIFIER))
+                        segmentStartIt = it;
+                    else
+                        throw TSCompileError("SEGMENT must have a name", *it);
+                }
+                else
+                    throw TSCompileError("you cannot declare a segment inside another one", *it);
+            }
+            else
+            {
+                if (segmentStartIt != tokenContainerVector.end())
+                {
+                    if ((it != tokenContainerVector.begin()) &&
+                        ((it - 1)->token.type() == TSToken::Type::USER_IDENTIFIER) &&
+                        ((it - 1)->token.value<string>() == (segmentStartIt - 1)->token.value<string>()))
+                    {
+                        segmentContainerVector.push_back({(it - 1)->token.value<string>(),
+                                                          vector<TSTokenContainer>(segmentStartIt + 1, it)});
+
+                        excludes.insert(excludes.end(), segmentStartIt - 1, it + 1);
+
+                        segmentStartIt = tokenContainerVector.end();
+                    }
+                    else
+                        throw TSCompileError("ENDS require a name", *it);
+                }
+                else
+                    throw TSCompileError("ENDS must and a SEGMENT", *it);
+            }
+        }
+    }
+
+    vector<TSTokenContainer> remains(excludeUsedTokens(tokenContainerVector, excludes));
+
+    if ((remains.end() - 1)->token.type() == TSToken::Type::END_DIRECTIVE)
+        remains.erase(remains.end() - 1);
+    else if (((remains.end() - 1)->token.type() == TSToken::Type::USER_IDENTIFIER) &&
+             ((remains.end() - 2)->token.type() == TSToken::Type::END_DIRECTIVE))
+        remains.erase(remains.end() - 2, remains.end());
+
+    if (!remains.empty())
+        throw TSCompileError("undefined expression outside segment", *remains.begin());
+
+    return segmentContainerVector;
+}
+
+vector<TSSegmentContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector)
+{
+    auto equPhaseResult = processEQUs(tokenContainerVector);
+    auto ifPhaseResult = processIFs(std::get<1>(equPhaseResult), std::get<0>(equPhaseResult));
+    return processSegmentsParting(ifPhaseResult);
 }

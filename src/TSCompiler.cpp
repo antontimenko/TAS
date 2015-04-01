@@ -4,7 +4,7 @@
 #include "TSException.h"
 #include "TSToken.h"
 #include "TSDiagnostics.h"
-#include "TSParser.h"
+#include "TSPreprocessor.h"
 #include <fstream>
 
 TSCompiler::TSCompiler()
@@ -27,7 +27,7 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             vector<TSLexemeContainer> lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVectorUncased);
             vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
 
-            parse(tokenContainerVector);
+            preprocess(tokenContainerVector);
         }
         catch (TSCompileError &e)
         {

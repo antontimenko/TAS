@@ -8,7 +8,7 @@ SOURCES= \
 	TSException.cpp \
 	TSToken.cpp \
 	TSDiagnostics.cpp \
-	TSParser.cpp \
+	TSPreprocessor.cpp \
 	TSMath.cpp
 
 all: build_dir tas

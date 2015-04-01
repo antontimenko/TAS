@@ -1,7 +1,6 @@
 #include "TSMath.h"
 
 #include "TSException.h"
-#include "TSParser.h"
 
 longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
 {
@@ -137,7 +136,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
         }
         else
         {
-            throw TSCompileError("ilegal expression", *operationIt);
+            throw TSCompileError("illegal expression", *operationIt);
         }
     }
 }
