@@ -28,6 +28,12 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
 
             vector<TSSegmentContainer> segmentContainerVector = preprocess(tokenContainerVector);
+
+            for (auto it = segmentContainerVector.begin(); it != segmentContainerVector.end(); ++it)
+            {
+                cout << "Segment " << it->name << endl;
+                printTokenTable(it->tokenContainerVector);
+            }
         }
         catch (TSCompileError &e)
         {

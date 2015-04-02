@@ -6,7 +6,7 @@
 #include <functional>
 #include <algorithm>
 
-vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
+auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
 {
     vector<TSMathOperation> mathOperationVector;
 
@@ -76,7 +76,7 @@ inline longlong computeMath(const vector<TSTokenContainer> &tokenContainerVector
     return mathExpressionComputer(convertToMathOperationVector(tokenContainerVector, equMap));
 }
 
-vector<TSTokenContainer> excludeUsedTokens(const vector<TSTokenContainer> &base, const vector<TSTokenContainer> &excludes)
+auto excludeUsedTokens(const vector<TSTokenContainer> &base, const vector<TSTokenContainer> &excludes)
 {
     vector<TSTokenContainer> newBase = base;
 
@@ -196,7 +196,7 @@ auto processEQUs(const vector<TSTokenContainer> &tokenContainerVector)
     return tuple<map<string, longlong>, vector<TSTokenContainer>>(equMap, excludeUsedTokens(tokenContainerVector, excludes));
 }
 
-vector<TSTokenContainer> processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
+auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
 {
     vector<TSTokenContainer> excludes;
 
@@ -360,7 +360,27 @@ vector<TSTokenContainer> processIFs(const vector<TSTokenContainer> &tokenContain
     return excludeUsedTokens(tokenContainerVector, excludes);
 }
 
-vector<TSSegmentContainer> processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector)
+auto processSymbolicConstantReplace(vector<TSTokenContainer> tokenContainerVector, const map<string, longlong> &equMap)
+{
+    for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it)
+    {
+        if (it->token.type() == TSToken::Type::USER_IDENTIFIER)
+        {
+            string identifier = it->token.value<string>();
+            if (equMap.count(identifier))
+            {
+                *it = {it->row,
+                       it->column,
+                       it->length,
+                       TSToken(TSToken::Type::CONSTANT_NUMBER, equMap.find(identifier)->second)};
+            }
+        }
+    }
+
+    return tokenContainerVector;
+}
+
+auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector)
 {
     vector<TSSegmentContainer> segmentContainerVector;
 
@@ -408,7 +428,7 @@ vector<TSSegmentContainer> processSegmentsParting(const vector<TSTokenContainer>
         }
     }
 
-    vector<TSTokenContainer> remains(excludeUsedTokens(tokenContainerVector, excludes));
+    vector<TSTokenContainer> remains = excludeUsedTokens(tokenContainerVector, excludes);
 
     if ((remains.end() - 1)->token.type() == TSToken::Type::END_DIRECTIVE)
         remains.erase(remains.end() - 1);
@@ -426,5 +446,6 @@ vector<TSSegmentContainer> preprocess(const vector<TSTokenContainer> &tokenConta
 {
     auto equPhaseResult = processEQUs(tokenContainerVector);
     auto ifPhaseResult = processIFs(std::get<1>(equPhaseResult), std::get<0>(equPhaseResult));
-    return processSegmentsParting(ifPhaseResult);
+    auto constantReplaceResult = processSymbolicConstantReplace(ifPhaseResult, std::get<0>(equPhaseResult));
+    return processSegmentsParting(constantReplaceResult);
 }
