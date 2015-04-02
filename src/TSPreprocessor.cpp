@@ -393,7 +393,7 @@ vector<TSSegmentContainer> processSegmentsParting(const vector<TSTokenContainer>
                         ((it - 1)->token.value<string>() == (segmentStartIt - 1)->token.value<string>()))
                     {
                         segmentContainerVector.push_back({(it - 1)->token.value<string>(),
-                                                          vector<TSTokenContainer>(segmentStartIt + 1, it)});
+                                                          vector<TSTokenContainer>(segmentStartIt + 1, it - 1)});
 
                         excludes.insert(excludes.end(), segmentStartIt - 1, it + 1);
 
@@ -403,7 +403,7 @@ vector<TSSegmentContainer> processSegmentsParting(const vector<TSTokenContainer>
                         throw TSCompileError("ENDS require a name", *it);
                 }
                 else
-                    throw TSCompileError("ENDS must and a SEGMENT", *it);
+                    throw TSCompileError("ENDS must end a SEGMENT", *it);
             }
         }
     }
