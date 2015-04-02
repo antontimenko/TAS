@@ -3,11 +3,9 @@
 #include "TSException.h"
 #include <stdexcept>
 
-const map<string, TSToken::SingleChar> TSToken::singleCharMap = {
-    {",", TSToken::SingleChar::COMMA},
-    {":", TSToken::SingleChar::COLON},
-    {"[", TSToken::SingleChar::BRACKET_OPEN},
-    {"]", TSToken::SingleChar::BRACKET_CLOSE}
+const map<string, TSToken::MemoryBracket> TSToken::memoryBracketMap = {
+    {"[", TSToken::MemoryBracket::OPEN},
+    {"]", TSToken::MemoryBracket::CLOSE}
 };
 
 const map<string, TSToken::MathSymbol> TSToken::mathSymbolMap = {
@@ -94,6 +92,8 @@ const map<string, TSToken::Condition> TSToken::conditionMap = {
     {"GE", TSToken::Condition::GE}
 };
 
+const string TSToken::commaStr = ",";
+const string TSToken::colonStr = ":";
 const string TSToken::sizeOperatorStr = "PTR";
 const string TSToken::equDirectiveStr = "EQU";
 const string TSToken::endDirectiveStr = "END";
@@ -109,14 +109,18 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
         
         TSToken currentToken;
 
-        if (lexeme == sizeOperatorStr)
+        if (lexeme == commaStr)
+            currentToken = TSToken(Type::COMMA);
+        else if (lexeme == colonStr)
+            currentToken = TSToken(Type::COLON);
+        else if (lexeme == sizeOperatorStr)
             currentToken = TSToken(Type::SIZE_OPERATOR);
         else if (lexeme == equDirectiveStr)
             currentToken = TSToken(Type::EQU_DIRECTIVE);
         else if (lexeme == endDirectiveStr)
             currentToken = TSToken(Type::END_DIRECTIVE);
-        else if (singleCharMap.count(lexeme))
-            currentToken = TSToken(Type::SINGLE_CHAR, singleCharMap.find(lexeme)->second);
+        else if (memoryBracketMap.count(lexeme))
+            currentToken = TSToken(Type::MEMORY_BRACKET, memoryBracketMap.find(lexeme)->second);
         else if (mathSymbolMap.count(lexeme))
             currentToken = TSToken(Type::MATH_SYMBOL, mathSymbolMap.find(lexeme)->second);
         else if (segmentDirectiveMap.count(lexeme))

@@ -15,8 +15,10 @@ public:
     {
         UNDEFINED,
         USER_IDENTIFIER,
-        SINGLE_CHAR,
+        MEMORY_BRACKET,
         MATH_SYMBOL,
+        COMMA,
+        COLON,
         SEGMENT_DIRECTIVE,
         INSTRUCTION,
         REGISTER_8,
@@ -33,12 +35,10 @@ public:
         END_DIRECTIVE
     };
 
-    enum class SingleChar
+    enum class MemoryBracket
     {
-        COMMA,
-        COLON,
-        BRACKET_OPEN,
-        BRACKET_CLOSE
+        OPEN,
+        CLOSE
     };
 
     enum class MathSymbol
@@ -169,7 +169,7 @@ public:
     {
         return *static_cast<T *>(valueP.get());
     }
-    static const map<string, SingleChar> singleCharMap;
+    static const map<string, MemoryBracket> memoryBracketMap;
     static const map<string, MathSymbol> mathSymbolMap;
     static const map<string, SegmentDirective> segmentDirectiveMap;
     static const map<string, Instruction> instructionMap;
@@ -180,6 +180,8 @@ public:
     static const map<string, DataIdentifier> dataIdentifierMap;
     static const map<string, ConditionDirective> conditionDirectiveMap;
     static const map<string, Condition> conditionMap;
+    static const string commaStr;
+    static const string colonStr;
     static const string sizeOperatorStr;
     static const string equDirectiveStr;
     static const string endDirectiveStr;

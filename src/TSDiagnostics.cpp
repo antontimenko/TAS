@@ -122,8 +122,8 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector)
         case TSToken::Type::USER_IDENTIFIER:
             printf("%-20s | %s\n", "User Identifier", token.value<string>().c_str());
             break;
-        case TSToken::Type::SINGLE_CHAR:
-            printf("%-20s | %s\n", "Single Char", findByValue(TSToken::singleCharMap, token.value<TSToken::SingleChar>())->first.c_str());
+        case TSToken::Type::MEMORY_BRACKET:
+            printf("%-20s | %s\n", "Memory Bracket", findByValue(TSToken::memoryBracketMap, token.value<TSToken::MemoryBracket>())->first.c_str());
             break;
         case TSToken::Type::MATH_SYMBOL:
             printf("%-20s | %s\n", "Math Symbol", findByValue(TSToken::mathSymbolMap, token.value<TSToken::MathSymbol>())->first.c_str());
@@ -160,6 +160,12 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector)
             break;
         case TSToken::Type::CONDITION:
             printf("%-20s | %s\n", "Condition", findByValue(TSToken::conditionMap, token.value<TSToken::Condition>())->first.c_str());
+            break;
+        case TSToken::Type::COMMA:
+            printf("%-20s | %s\n", "Comma", TSToken::commaStr.c_str());
+            break;
+        case TSToken::Type::COLON:
+            printf("%-20s | %s\n", "Colon", TSToken::colonStr.c_str());
             break;
         case TSToken::Type::SIZE_OPERATOR:
             printf("%-20s | %s\n", "Size Operator", TSToken::sizeOperatorStr.c_str());
@@ -203,8 +209,8 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const
         case TSToken::Type::USER_IDENTIFIER:
             printf("%-20s | %s\n", "User Identifier", lexeme.c_str());
             break;
-        case TSToken::Type::SINGLE_CHAR:
-            printf("%-20s | %s\n", "Single Char", lexeme.c_str());
+        case TSToken::Type::MEMORY_BRACKET:
+            printf("%-20s | %s\n", "Memory Bracket", lexeme.c_str());
             break;
         case TSToken::Type::MATH_SYMBOL:
             printf("%-20s | %s\n", "Math Symbol", lexeme.c_str());
@@ -241,6 +247,12 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const
             break;
         case TSToken::Type::CONDITION:
             printf("%-20s | %s\n", "Condition", lexeme.c_str());
+            break;
+        case TSToken::Type::COMMA:
+            printf("%-20s | %s\n", "Comma", lexeme.c_str());
+            break;
+        case TSToken::Type::COLON:
+            printf("%-20s | %s\n", "Colon", lexeme.c_str());
             break;
         case TSToken::Type::SIZE_OPERATOR:
             printf("%-20s | %s\n", "Size Operator", lexeme.c_str());
