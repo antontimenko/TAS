@@ -4,6 +4,7 @@
 #include "TSGlobal.h"
 #include "TSToken.h"
 #include "TSLexeme.h"
+#include "TSParser.h"
 
 namespace TSColor
 {
@@ -31,5 +32,7 @@ void printCompileError(string text, const string &sourceFileContents, size_t row
 void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector);
 void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const vector<TSLexemeContainer> &lexemeContainerVector);
 void printEquTable(const map<string, longlong> &equMap);
+void printPseudoLabelTable(const map<string, tuple<LabelType, TSToken::DataIdentifier, size_t>> &labelMap);
+void printPseudoSentenceTable(const vector<TSSegmentPseudoSentence> &segmentPseudoSentenceVector);
 
 #endif

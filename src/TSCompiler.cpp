@@ -26,14 +26,8 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             vector<TSLexemeContainer> lexemeContainerVectorUncased = constructLexemeContainerVector(sourceFileContents);
             vector<TSLexemeContainer> lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVectorUncased);
             vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
-
-            vector<TSSegmentContainer> segmentContainerVector = preprocess(tokenContainerVector);
-
-            for (auto it = segmentContainerVector.begin(); it != segmentContainerVector.end(); ++it)
-            {
-                cout << "Segment " << it->name << endl;
-                printTokenTable(it->tokenContainerVector);
-            }
+            vector<TSSegmentTokenContainer> segmentTokenContainerVector = preprocess(tokenContainerVector);
+            parse(segmentTokenContainerVector);
         }
         catch (TSCompileError &e)
         {

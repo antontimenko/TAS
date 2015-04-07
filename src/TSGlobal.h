@@ -16,6 +16,7 @@ using std::vector;
 using std::map;
 using std::tuple;
 
+typedef unsigned char uchar;
 typedef long long longlong;
 typedef unsigned long long ulonglong;
 

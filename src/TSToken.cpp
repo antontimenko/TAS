@@ -22,17 +22,7 @@ const map<string, TSToken::SegmentDirective> TSToken::segmentDirectiveMap = {
     {"ENDS", TSToken::SegmentDirective::ENDS}
 };
 
-const map<string, TSToken::Instruction> TSToken::instructionMap = {
-    {"SCASD", TSToken::Instruction::SCASD},
-    {"RCL", TSToken::Instruction::RCL},
-    {"DIV", TSToken::Instruction::DIV},
-    {"OR", TSToken::Instruction::OR},
-    {"CMP", TSToken::Instruction::CMP},
-    {"AND", TSToken::Instruction::AND},
-    {"MOV", TSToken::Instruction::MOV},
-    {"ADD", TSToken::Instruction::ADD},
-    {"JNB", TSToken::Instruction::JNB}
-};
+const map<string, TSToken::Instruction> &TSToken::instructionMap = TSInstruction::instructionMap;
 
 const map<string, TSToken::Register8> TSToken::register8Map = {
     {"AL", TSToken::Register8::AL},
@@ -43,6 +33,17 @@ const map<string, TSToken::Register8> TSToken::register8Map = {
     {"CH", TSToken::Register8::CH},
     {"DL", TSToken::Register8::DL},
     {"DH", TSToken::Register8::DH}
+};
+
+const map<string, TSToken::Register16> TSToken::register16Map = {
+    {"AX", TSToken::Register16::AX},
+    {"BX", TSToken::Register16::BX},
+    {"CX", TSToken::Register16::CX},
+    {"DX", TSToken::Register16::DX},
+    {"SP", TSToken::Register16::SP},
+    {"BP", TSToken::Register16::BP},
+    {"SI", TSToken::Register16::SI},
+    {"DI", TSToken::Register16::DI}
 };
 
 const map<string, TSToken::Register32> TSToken::register32Map = {
@@ -68,6 +69,7 @@ const map<string, TSToken::RegisterSegment> TSToken::registerSegmentMap = {
 
 const map<string, TSToken::SizeIdentifier> TSToken::sizeIdentifierMap = {
     {"BYTE", TSToken::SizeIdentifier::BYTE},
+    {"WORD", TSToken::SizeIdentifier::WORD},
     {"DWORD", TSToken::SizeIdentifier::DWORD}
 };
 
@@ -129,6 +131,8 @@ vector<TSTokenContainer> TSToken::constructTokenContainerVector(vector<TSLexemeC
             currentToken = TSToken(Type::INSTRUCTION, instructionMap.find(lexeme)->second);
         else if (register8Map.count(lexeme))
             currentToken = TSToken(Type::REGISTER_8, register8Map.find(lexeme)->second);
+        else if (register16Map.count(lexeme))
+            currentToken = TSToken(Type::REGISTER_16, register16Map.find(lexeme)->second);
         else if (register32Map.count(lexeme))
             currentToken = TSToken(Type::REGISTER_32, register32Map.find(lexeme)->second);
         else if (registerSegmentMap.count(lexeme))

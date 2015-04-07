@@ -6,7 +6,7 @@
 #include <functional>
 #include <algorithm>
 
-auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
+vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
 {
     vector<TSMathOperation> mathOperationVector;
 
@@ -71,7 +71,7 @@ auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainer
     return mathOperationVector;
 }
 
-inline longlong computeMath(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
+longlong computeMath(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> equMap)
 {
     return mathExpressionComputer(convertToMathOperationVector(tokenContainerVector, equMap));
 }
@@ -90,7 +90,7 @@ auto excludeUsedTokens(const vector<TSTokenContainer> &base, const vector<TSToke
     return newBase;
 }
 
-auto getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
+vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
 {
     auto requireRightParam = [](const TSToken &token) -> bool {
         return (token.type() == TSToken::Type::MATH_SYMBOL) &&
@@ -382,7 +382,7 @@ auto processSymbolicConstantReplace(vector<TSTokenContainer> tokenContainerVecto
 
 auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector)
 {
-    vector<TSSegmentContainer> segmentContainerVector;
+    vector<TSSegmentTokenContainer> segmentTokenContainerVector;
 
     vector<TSTokenContainer> excludes;
 
@@ -412,7 +412,7 @@ auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector
                         ((it - 1)->token.type() == TSToken::Type::USER_IDENTIFIER) &&
                         ((it - 1)->token.value<string>() == (segmentStartIt - 1)->token.value<string>()))
                     {
-                        segmentContainerVector.push_back({(it - 1)->token.value<string>(),
+                        segmentTokenContainerVector.push_back({(it - 1)->token.value<string>(),
                                                           vector<TSTokenContainer>(segmentStartIt + 1, it - 1)});
 
                         excludes.insert(excludes.end(), segmentStartIt - 1, it + 1);
@@ -439,13 +439,34 @@ auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector
     if (!remains.empty())
         throw TSCompileError("undefined expression outside segment", *remains.begin());
 
-    return segmentContainerVector;
+    return segmentTokenContainerVector;
 }
 
-vector<TSSegmentContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector)
+void checkSegmentNameExistance(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector)
+{
+    vector<string> segmentNameVector;
+    for (auto it = segmentTokenContainerVector.begin(); it != segmentTokenContainerVector.end(); ++it)
+        segmentNameVector.push_back(it->name);
+
+    for (auto it = segmentTokenContainerVector.begin(); it != segmentTokenContainerVector.end(); ++it)
+    {
+        for (auto jt = it->tokenContainerVector.begin(); jt != it->tokenContainerVector.end(); ++jt)
+        {
+            if ((jt->token.type() == TSToken::Type::USER_IDENTIFIER) &&
+                (std::count(segmentNameVector.begin(), segmentNameVector.end(), jt->token.value<string>())))
+            {
+                throw TSCompileError("segment name usage is not implemented yet", *jt);
+            }
+        }
+    }
+}
+
+vector<TSSegmentTokenContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector)
 {
     auto equPhaseResult = processEQUs(tokenContainerVector);
     auto ifPhaseResult = processIFs(std::get<1>(equPhaseResult), std::get<0>(equPhaseResult));
     auto constantReplaceResult = processSymbolicConstantReplace(ifPhaseResult, std::get<0>(equPhaseResult));
-    return processSegmentsParting(constantReplaceResult);
+    auto segmentsPartingResult = processSegmentsParting(constantReplaceResult);
+    checkSegmentNameExistance(segmentsPartingResult);
+    return segmentsPartingResult;
 }

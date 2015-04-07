@@ -133,9 +133,9 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
                 }
                 else
                     throw TSCompileError("Unknown character", row, column, 1);
-
-                ++column;
             }
+
+            ++column;
         }
     }
 

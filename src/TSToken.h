@@ -4,6 +4,7 @@
 #include "TSGlobal.h"
 #include "TSLexeme.h"
 #include "TSUniquePtr.h"
+#include "TSInstruction.h"
 #include <utility>
 
 class TSTokenContainer;
@@ -22,6 +23,7 @@ public:
         SEGMENT_DIRECTIVE,
         INSTRUCTION,
         REGISTER_8,
+        REGISTER_16,
         REGISTER_32,
         REGISTER_SEGMENT,
         SIZE_IDENTIFIER,
@@ -57,18 +59,7 @@ public:
         ENDS
     };
 
-    enum class Instruction
-    {
-        SCASD,
-        RCL,
-        DIV,
-        OR,
-        CMP,
-        AND,
-        MOV,
-        ADD,
-        JNB
-    };
+    typedef TSInstruction::Instruction Instruction;
 
     enum class Register8
     {
@@ -80,6 +71,18 @@ public:
         CH,
         DL,
         DH
+    };
+
+    enum class Register16
+    {
+        AX,
+        BX,
+        CX,
+        DX,
+        SP,
+        BP,
+        SI,
+        DI
     };
 
     enum class Register32
@@ -107,6 +110,7 @@ public:
     enum class SizeIdentifier
     {
         BYTE,
+        WORD,
         DWORD
     };
 
@@ -172,8 +176,9 @@ public:
     static const map<string, MemoryBracket> memoryBracketMap;
     static const map<string, MathSymbol> mathSymbolMap;
     static const map<string, SegmentDirective> segmentDirectiveMap;
-    static const map<string, Instruction> instructionMap;
+    static const map<string, Instruction> &instructionMap;
     static const map<string, Register8> register8Map;
+    static const map<string, Register16> register16Map;
     static const map<string, Register32> register32Map;
     static const map<string, RegisterSegment> registerSegmentMap;
     static const map<string, SizeIdentifier> sizeIdentifierMap;

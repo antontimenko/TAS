@@ -9,7 +9,9 @@ SOURCES= \
 	TSToken.cpp \
 	TSDiagnostics.cpp \
 	TSPreprocessor.cpp \
-	TSMath.cpp
+	TSMath.cpp \
+	TSParser.cpp \
+	TSInstruction.cpp
 
 all: build_dir tas
 
