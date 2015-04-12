@@ -7,8 +7,6 @@
 #include "TSInstruction.h"
 #include <utility>
 
-class TSTokenContainer;
-
 class TSToken
 {
 public:
@@ -190,7 +188,6 @@ public:
     static const string sizeOperatorStr;
     static const string equDirectiveStr;
     static const string endDirectiveStr;
-    static vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
 private:
     Type _type;
     TSUniquePtr<void> valueP;
@@ -210,5 +207,7 @@ public:
                (length == tokenContainer.length);
     }
 };
+
+vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
 
 #endif

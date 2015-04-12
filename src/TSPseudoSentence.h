@@ -1,5 +1,5 @@
-#ifndef _TSPARSER_H_
-#define _TSPARSER_H_
+#ifndef _TSPSEUDOSENTENCE_H_
+#define _TSPSEUDOSENTENCE_H_
 
 #include "TSGlobal.h"
 #include "TSToken.h"
@@ -19,12 +19,15 @@ struct TSSegmentPseudoSentence
     vector<TSPseudoSentence> pseudoSentenceVector;
 };
 
-enum class LabelType
+enum class TSLabelType
 {
     LABEL,
     DATA
 };
 
-void parse(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector);
+typedef tuple<TSLabelType, TSToken::DataIdentifier, size_t> TSLabelParamType;
+typedef tuple<vector<TSSegmentPseudoSentence>, map<string, TSLabelParamType>> TSPseudoSentenceSplitType;
+
+TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector);
 
 #endif

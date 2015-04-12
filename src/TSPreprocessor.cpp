@@ -90,15 +90,11 @@ auto excludeUsedTokens(const vector<TSTokenContainer> &base, const vector<TSToke
     return newBase;
 }
 
-vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
+auto getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
 {
     auto requireRightParam = [](const TSToken &token) -> bool {
         return (token.type() == TSToken::Type::MATH_SYMBOL) &&
-               ((token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::PLUS) ||
-                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::MINUS) ||
-                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::MULTIPLY) ||
-                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::DIVIDE) ||
-                (token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::BRACKET_OPEN));
+                   (token.value<TSToken::MathSymbol>() != TSToken::MathSymbol::BRACKET_CLOSE);
     };
     
     auto it = begin;

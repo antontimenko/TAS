@@ -256,7 +256,7 @@ void printEquTable(const map<string, longlong> &equMap)
     cout << endl;
 }
 
-void printPseudoLabelTable(const map<string, tuple<LabelType, TSToken::DataIdentifier, size_t>> &labelMap)
+void printPseudoLabelTable(const map<string, tuple<TSLabelType, TSToken::DataIdentifier, size_t>> &labelMap)
 {
     cout << TSColor::BWhite << "---PSEUDO LABEL TABLE OUTPUT---" << TSColor::Reset << endl << endl;
 
@@ -270,7 +270,7 @@ void printPseudoLabelTable(const map<string, tuple<LabelType, TSToken::DataIdent
     for (auto it = labelMap.begin(); it != labelMap.end(); ++it)
         printf("%-*s | %-5s | %u\n", maxLabelSize,
                                      it->first.c_str(),
-                                     std::get<0>(it->second) == LabelType::LABEL ? "Label" : findByValue(TSToken::dataIdentifierMap, std::get<1>(it->second))->first.c_str(),
+                                     std::get<0>(it->second) == TSLabelType::LABEL ? "Label" : findByValue(TSToken::dataIdentifierMap, std::get<1>(it->second))->first.c_str(),
                                      std::get<2>(it->second));
 
     cout << endl;

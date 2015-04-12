@@ -10,7 +10,7 @@ SOURCES= \
 	TSDiagnostics.cpp \
 	TSPreprocessor.cpp \
 	TSMath.cpp \
-	TSParser.cpp \
+	TSPseudoSentence.cpp \
 	TSInstruction.cpp
 
 all: build_dir tas

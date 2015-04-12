@@ -1,14 +1,32 @@
-#include "TSParser.h"
+#include "TSPseudoSentence.h"
 
 #include "TSException.h"
 #include "TSDiagnostics.h"
-#include <functional>
 
-auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector)
+TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector)
 {
     typedef vector<TSTokenContainer>::const_iterator ItType;
     
-    std::function<ItType(ItType, ItType)> locateMemoryBrackets = [](ItType it, ItType endIt) -> ItType {
+    auto locateMathTokenSequence = [](ItType begin, ItType end) -> ItType {
+        auto requireRightParam = [](const TSToken &token) -> bool {
+            return (token.type() == TSToken::Type::MATH_SYMBOL) &&
+                   (token.value<TSToken::MathSymbol>() != TSToken::MathSymbol::BRACKET_CLOSE);
+        };
+        
+        auto it = begin;
+        while ((it != end) &&
+               ((it->token.type() == TSToken::Type::MATH_SYMBOL) ||
+                ((it->token.type() == TSToken::Type::CONSTANT_NUMBER) &&
+                 ((requireRightParam((it - 1)->token)) ||
+                  (it == begin)))))
+        {
+            ++it;
+        }
+
+        return it;
+    };
+
+    auto locateMemoryBrackets = [](ItType it, ItType endIt) -> ItType {
         while ((it != endIt) &&
                (it->token.type() == TSToken::Type::MEMORY_BRACKET) &&
                (it->token.value<TSToken::MemoryBracket>() == TSToken::MemoryBracket::OPEN))
@@ -36,7 +54,7 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
         return it;
     };
 
-    std::function<ItType(ItType, ItType)> locateInstructionOperand = [&locateMemoryBrackets](ItType begin, ItType end) -> ItType {
+    std::function<ItType(ItType, ItType)> locateInstructionOperand = [&](ItType begin, ItType end) -> ItType {
         auto it = begin;
 
         if (it == end)
@@ -52,18 +70,6 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
             return it + 1;
         }
 
-        if ((it->token.type() == TSToken::Type::CONSTANT_NUMBER) ||
-            (it->token.type() == TSToken::Type::MATH_SYMBOL))
-        {
-            auto mathEndIt = getMathTokenSequence(it, end);
-            if ((mathEndIt == end) ||
-                (mathEndIt->token.type() != TSToken::Type::MEMORY_BRACKET) ||
-                (mathEndIt->token.value<TSToken::MemoryBracket>() != TSToken::MemoryBracket::OPEN))
-            {
-                return mathEndIt;
-            }
-        }
-
         if (it->token.type() == TSToken::Type::SIZE_IDENTIFIER)
         {
             ++it;
@@ -71,10 +77,12 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
                 ++it;
         }
 
+        bool isSegmentOverridePersist = false;
         if ((it != end) && (it->token.type() == TSToken::Type::REGISTER_SEGMENT) &&
             ((it + 1) != end) && ((it + 1)->token.type() == TSToken::Type::COLON))
         {
             it += 2;
+            isSegmentOverridePersist = true;
         }
 
         auto memoryBracketsEndIt = locateMemoryBrackets(it, end);
@@ -87,12 +95,13 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
         if ((it->token.type() == TSToken::Type::CONSTANT_NUMBER) ||
             (it->token.type() == TSToken::Type::MATH_SYMBOL))
         {
-            auto mathEndIt = getMathTokenSequence(it, end);
-            auto memoryBracketsEndIt = locateMemoryBrackets(mathEndIt, end);
-            if (mathEndIt == memoryBracketsEndIt)
-                throw TSCompileError("just number cannot be address", *it);
+            auto mathEndIt = locateMathTokenSequence(it, end);
+            auto bracketEndIt = locateMemoryBrackets(mathEndIt, end);
 
-            return memoryBracketsEndIt;
+            if (isSegmentOverridePersist && (bracketEndIt == mathEndIt))
+                throw TSCompileError("constant cannot have segment override", *it);
+            else
+                return bracketEndIt;
         }
 
         if (it != begin)
@@ -101,7 +110,7 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
         return it;
     };
 
-    auto locateDataOperand = [](ItType begin, ItType end) -> ItType {
+    std::function<ItType(ItType, ItType)> locateDataOperand = [&](ItType begin, ItType end) -> ItType {
         auto it = begin;
 
         if (it == end)
@@ -110,7 +119,7 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
         if ((it->token.type() == TSToken::Type::CONSTANT_NUMBER) ||
             (it->token.type() == TSToken::Type::MATH_SYMBOL))
         {
-            return getMathTokenSequence(it, end);
+            return locateMathTokenSequence(it, end);
         }
 
         if ((it->token.type() == TSToken::Type::USER_IDENTIFIER) ||
@@ -123,8 +132,7 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
     };
 
     vector<TSSegmentPseudoSentence> segmentPseudoSentenceVector;
-    typedef tuple<LabelType, TSToken::DataIdentifier, size_t> labelParamType;
-    map<string, labelParamType> labelMap;
+    map<string, TSLabelParamType> labelMap;
 
     for (auto segIt = segmentTokenContainerVector.begin(); segIt != segmentTokenContainerVector.end(); ++segIt)
     {
@@ -146,9 +154,9 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
                     if (labelMap.count((it - 1)->token.value<string>()))
                         throw TSCompileError("duplicate label", *(it - 1));
 
-                    labelMap[(it - 1)->token.value<string>()] = labelParamType(LabelType::LABEL,
-                                                                               TSToken::DataIdentifier(),
-                                                                               pseudoSentenceVector.size());
+                    labelMap[(it - 1)->token.value<string>()] = TSLabelParamType(TSLabelType::LABEL,
+                                                                                 TSToken::DataIdentifier(),
+                                                                                 pseudoSentenceVector.size());
                     
                     ++it;
                 }
@@ -157,9 +165,9 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
                     if (labelMap.count((it - 1)->token.value<string>()))
                         throw TSCompileError("duplicate label", *(it - 1));
 
-                    labelMap[(it - 1)->token.value<string>()] = labelParamType(LabelType::DATA,
-                                                                               it->token.value<TSToken::DataIdentifier>(),
-                                                                               pseudoSentenceVector.size());
+                    labelMap[(it - 1)->token.value<string>()] = TSLabelParamType(TSLabelType::DATA,
+                                                                                 it->token.value<TSToken::DataIdentifier>(),
+                                                                                 pseudoSentenceVector.size());
                 }
                 else
                     throw TSCompileError("must be colon or size identifier", *(it - 1));
@@ -212,11 +220,4 @@ auto constructPseudoSentences(const vector<TSSegmentTokenContainer> &segmentToke
     }
 
     return tuple<decltype(segmentPseudoSentenceVector), decltype(labelMap)>(segmentPseudoSentenceVector, labelMap);
-}
-
-void parse(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector)
-{
-    auto pseudoSentenceResult = constructPseudoSentences(segmentTokenContainerVector);
-    printPseudoLabelTable(std::get<1>(pseudoSentenceResult));
-    printPseudoSentenceTable(std::get<0>(pseudoSentenceResult));
 }

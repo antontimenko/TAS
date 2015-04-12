@@ -23,11 +23,11 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
 
         try
         {
-            vector<TSLexemeContainer> lexemeContainerVectorUncased = constructLexemeContainerVector(sourceFileContents);
-            vector<TSLexemeContainer> lexemeContainerVector = convertLexemeContainerVectorToUpperCase(lexemeContainerVectorUncased);
-            vector<TSTokenContainer> tokenContainerVector = TSToken::constructTokenContainerVector(lexemeContainerVector);
-            vector<TSSegmentTokenContainer> segmentTokenContainerVector = preprocess(tokenContainerVector);
-            parse(segmentTokenContainerVector);
+            auto phase1 = constructLexemeContainerVector(sourceFileContents);
+            auto phase2 = convertLexemeContainerVectorToUpperCase(phase1);
+            auto phase3 = constructTokenContainerVector(phase2);
+            auto phase4 = preprocess(phase3);
+            auto phase5 = splitPseudoSentences(phase4);
         }
         catch (TSCompileError &e)
         {
