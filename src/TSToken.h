@@ -2,17 +2,16 @@
 #define _TSTOKEN_H_
 
 #include "TSGlobal.h"
+#include "TSCodePosition.h"
 #include "TSLexeme.h"
 #include "TSUniquePtr.h"
 #include "TSInstruction.h"
-#include <utility>
 
 class TSToken
 {
 public:
     enum class Type
     {
-        UNDEFINED,
         USER_IDENTIFIER,
         MEMORY_BRACKET,
         MATH_SYMBOL,
@@ -20,10 +19,7 @@ public:
         COLON,
         SEGMENT_DIRECTIVE,
         INSTRUCTION,
-        REGISTER_8,
-        REGISTER_16,
-        REGISTER_32,
-        REGISTER_SEGMENT,
+        REGISTER,
         SIZE_IDENTIFIER,
         DATA_IDENTIFIER,
         CONSTANT_NUMBER,
@@ -59,51 +55,7 @@ public:
 
     typedef TSInstruction::Instruction Instruction;
 
-    enum class Register8
-    {
-        AL,
-        AH,
-        BL,
-        BH,
-        CL,
-        CH,
-        DL,
-        DH
-    };
-
-    enum class Register16
-    {
-        AX,
-        BX,
-        CX,
-        DX,
-        SP,
-        BP,
-        SI,
-        DI
-    };
-
-    enum class Register32
-    {
-        EAX,
-        EBX,
-        ECX,
-        EDX,
-        ESP,
-        EBP,
-        ESI,
-        EDI
-    };
-
-    enum class RegisterSegment
-    {
-        CS,
-        DS,
-        SS,
-        ES,
-        FS,
-        GS
-    };
+    typedef TSOperandMask::Mask Register;
 
     enum class SizeIdentifier
     {
@@ -112,12 +64,7 @@ public:
         DWORD
     };
 
-    enum class DataIdentifier
-    {
-        DB,
-        DW,
-        DD
-    };
+    typedef TSInstruction::DataIdentifier DataIdentifier;
 
     enum class ConditionDirective
     {
@@ -140,21 +87,21 @@ public:
     inline TSToken(Type tokenType, T value) :
         _type(tokenType),
         valueP(new T(value))
-    {
-    }
+    {}
+
     inline TSToken(Type tokenType) :
         TSToken(tokenType, nullptr)
-    {
-    }
+    {}
+
     inline TSToken() :
-        TSToken(Type::UNDEFINED)
-    {
-    }
+        TSToken(Type::USER_IDENTIFIER)
+    {}
+
     inline TSToken(const TSToken &token) :
         _type(token._type),
         valueP(token.valueP.copy())
-    {
-    }
+    {}
+
     inline TSToken &operator=(const TSToken &token)
     {
         _type = token._type;
@@ -162,25 +109,25 @@ public:
 
         return *this;
     }
+
     inline Type type() const
     {
         return _type;
     }
+
     template<typename T>
     inline T value() const
     {
         return *static_cast<T *>(valueP.get());
     }
+    
     static const map<string, MemoryBracket> memoryBracketMap;
     static const map<string, MathSymbol> mathSymbolMap;
     static const map<string, SegmentDirective> segmentDirectiveMap;
     static const map<string, Instruction> &instructionMap;
-    static const map<string, Register8> register8Map;
-    static const map<string, Register16> register16Map;
-    static const map<string, Register32> register32Map;
-    static const map<string, RegisterSegment> registerSegmentMap;
+    static const map<string, Register> &registerMap;
     static const map<string, SizeIdentifier> sizeIdentifierMap;
-    static const map<string, DataIdentifier> dataIdentifierMap;
+    static const map<string, DataIdentifier> &dataIdentifierMap;
     static const map<string, ConditionDirective> conditionDirectiveMap;
     static const map<string, Condition> conditionMap;
     static const string commaStr;
@@ -196,15 +143,11 @@ private:
 class TSTokenContainer
 {
 public:
-    size_t row;
-    size_t column;
-    size_t length;
+    TSCodePosition pos;
     TSToken token;
     inline bool operator==(const TSTokenContainer &tokenContainer) const
     {
-        return (row == tokenContainer.row) &&
-               (column == tokenContainer.column) &&
-               (length == tokenContainer.length);
+        return pos == tokenContainer.pos;
     }
 };
 

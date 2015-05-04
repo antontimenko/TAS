@@ -10,14 +10,10 @@
 struct TSPseudoSentence
 {
     TSTokenContainer baseTokenContainer;
-    vector<vector<TSTokenContainer>> operandVector;
+    vector<vector<TSTokenContainer>> operandsTokenContainerVector;
 };
 
-struct TSSegmentPseudoSentence
-{
-    string name;
-    vector<TSPseudoSentence> pseudoSentenceVector;
-};
+typedef tuple<string, vector<TSPseudoSentence>> TSPseudoSentencesSegmentContainer;
 
 enum class TSLabelType
 {
@@ -25,9 +21,9 @@ enum class TSLabelType
     DATA
 };
 
-typedef tuple<TSLabelType, TSToken::DataIdentifier, size_t> TSLabelParamType;
-typedef tuple<vector<TSSegmentPseudoSentence>, map<string, TSLabelParamType>> TSPseudoSentenceSplitType;
+typedef tuple<TSLabelType, TSToken::DataIdentifier, size_t, string> TSLabelParamType;
+typedef tuple<vector<TSPseudoSentencesSegmentContainer>, map<string, TSLabelParamType>> TSPseudoSentenceSplitType;
 
-TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector);
+TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSegmentContainer> &segmentTokenContainerVector);
 
 #endif

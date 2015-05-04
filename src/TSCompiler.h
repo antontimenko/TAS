@@ -6,8 +6,16 @@
 class TSCompiler
 {
 public:
+    enum class Arch
+    {
+        X86_16,
+        X86_32
+    };
+
     void compile(const string &sourceFilePath, const string &resultFilePath) const;
     static TSCompiler &instance();
+
+    static const Arch defaultArch;
 private:
     TSCompiler();
     TSCompiler(const TSCompiler &) = delete;

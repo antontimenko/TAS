@@ -5,12 +5,9 @@
 #include "TSToken.h"
 #include "TSMath.h"
 
-struct TSSegmentTokenContainer
-{
-    string name;
-    vector<TSTokenContainer> tokenContainerVector;
-};
+typedef tuple<string, vector<TSTokenContainer>> TSTokenContainersSegmentContainer;
 
-vector<TSSegmentTokenContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector);
+vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end);
+vector<TSTokenContainersSegmentContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector);
 
 #endif

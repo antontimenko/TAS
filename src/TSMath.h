@@ -2,6 +2,8 @@
 #define _TSMATH_H_
 
 #include "TSGlobal.h"
+#include "TSCodePosition.h"
+#include "TSInteger.h"
 
 enum TSMathOperationKind
 {
@@ -17,12 +19,10 @@ enum TSMathOperationKind
 struct TSMathOperation
 {
     TSMathOperationKind kind;
-    longlong value;
-    size_t row;
-    size_t column;
-    size_t length;
+    TSInteger value;
+    TSCodePosition pos;
 };
 
-longlong mathExpressionComputer(vector<TSMathOperation> mathContainerVector);
+TSInteger mathExpressionComputer(const vector<TSMathOperation> &mathOperationVector);
 
 #endif

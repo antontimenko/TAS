@@ -132,7 +132,7 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
                     currentLexeme += currentChar;
                 }
                 else
-                    throw TSCompileError("Unknown character", row, column, 1);
+                    throw TSCompileError("Unknown character", {row, column, 1});
             }
 
             ++column;
@@ -142,7 +142,7 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
     if (!currentLexeme.empty())
     {
         if ((isCharQuoteCompatible(currentLexeme[0])) && (currentLexeme[0] != currentLexeme[currentLexeme.size() - 1]))
-            throw TSCompileError("Unclosed string detected", currentLexemeRow, currentLexemeColumn, 1);
+            throw TSCompileError("Unclosed string detected", {currentLexemeRow, currentLexemeColumn, 1});
         
         lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
     }

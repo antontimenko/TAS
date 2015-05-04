@@ -7,6 +7,11 @@
 #include <map>
 #include <algorithm>
 #include <tuple>
+#include <functional>
+#include <memory>
+#include <experimental/optional>
+#include <utility>
+#include <stdint.h>
 
 using std::cout;
 using std::endl;
@@ -15,9 +20,11 @@ using std::string;
 using std::vector;
 using std::map;
 using std::tuple;
-
-typedef unsigned char uchar;
-typedef long long longlong;
-typedef unsigned long long ulonglong;
+using std::get;
+using std::make_tuple;
+using std::function;
+using std::shared_ptr;
+using std::experimental::optional;
+using std::experimental::nullopt;
 
 #endif

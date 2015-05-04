@@ -2,6 +2,7 @@
 #define _TSEXCEPTION_H_
 
 #include "TSGlobal.h"
+#include "TSCodePosition.h"
 #include "TSToken.h"
 #include "TSMath.h"
 #include <exception>
@@ -18,16 +19,10 @@ protected:
 class TSCompileError : public TSException
 {
 public: 
-    TSCompileError(string text, size_t row, size_t column, size_t length = 0);
-    TSCompileError(string text, TSTokenContainer tokenContainer);
-    TSCompileError(string text, TSMathOperation mathOperation);
-    virtual const size_t &row() const;
-    virtual const size_t &column() const;
-    virtual const size_t &length() const;
+    TSCompileError(string text, TSCodePosition pos);
+    virtual const TSCodePosition &pos() const;
 protected:
-    const size_t _row;
-    const size_t _column;
-    const size_t _length;
+    const TSCodePosition _pos;
 };
 
 #endif

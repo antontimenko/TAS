@@ -2,8 +2,11 @@
 
 #include "TSException.h"
 
-longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
+TSInteger mathExpressionComputer(const vector<TSMathOperation> &mathOperationVector)
 {
+    if (mathOperationVector.empty())
+        return 0_I;
+
     auto operationIt = mathOperationVector.end();
 
     bool isOperationWholeBracket = true;
@@ -49,7 +52,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             --bracketCount;
 
         if (bracketCount < 0)
-            throw TSCompileError("extra close bracket is illegal", *it);
+            throw TSCompileError("extra close bracket is illegal", it->pos);
 
         if ((bracketCount == 0) && 
             ((it != (mathOperationVector.end() - 1)) || 
@@ -60,16 +63,16 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
 
     if (bracketCount > 0)
         throw TSCompileError("unclosed bracket is illegal",
-                             (mathOperationVector.end() - 1)->row,
-                             (mathOperationVector.end() - 1)->column + 1,
-                             0);
+                             {(mathOperationVector.end() - 1)->pos.row,
+                              (mathOperationVector.end() - 1)->pos.column + 1,
+                              0});
 
     if (isOperationWholeBracket)
     {
         vector<TSMathOperation> newMathOperationVector(mathOperationVector.begin() + 1, mathOperationVector.end() - 1);
         
         if (newMathOperationVector.empty())
-            throw TSCompileError("empty expression is illegal", *mathOperationVector.begin());
+            throw TSCompileError("empty expression is illegal", mathOperationVector.begin()->pos);
         
         return mathExpressionComputer(newMathOperationVector);
     }
@@ -81,12 +84,21 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'+' must have right value", *operationIt);
+                throw TSCompileError("'+' must have right value", operationIt->pos);
             
             if (newMathOperationVectorLeft.empty())
                 return mathExpressionComputer(newMathOperationVectorRight);
             else
-                return mathExpressionComputer(newMathOperationVectorLeft) + mathExpressionComputer(newMathOperationVectorRight);
+            {
+                try
+                {
+                    return mathExpressionComputer(newMathOperationVectorLeft) + mathExpressionComputer(newMathOperationVectorRight);
+                }
+                catch (std::overflow_error &e)
+                {
+                    throw TSCompileError(e.what(), operationIt->pos);
+                }
+            }
         }
         else if (operationIt->kind == TSMathOperationKind::SUBTRACT)
         {
@@ -94,12 +106,19 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'-' must have right value", *operationIt);
+                throw TSCompileError("'-' must have right value", operationIt->pos);
             
-            if (newMathOperationVectorLeft.empty())
-                return -mathExpressionComputer(newMathOperationVectorRight);
-            else
-                return mathExpressionComputer(newMathOperationVectorLeft) - mathExpressionComputer(newMathOperationVectorRight);
+            try
+            {
+                if (newMathOperationVectorLeft.empty())
+                    return -mathExpressionComputer(newMathOperationVectorRight);
+                else
+                    return mathExpressionComputer(newMathOperationVectorLeft) - mathExpressionComputer(newMathOperationVectorRight);
+            }
+            catch (std::overflow_error &e)
+            {
+                throw TSCompileError(e.what(), operationIt->pos);
+            }
         }
         else if (operationIt->kind == TSMathOperationKind::MULTIPLY)
         {
@@ -107,12 +126,19 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'*' must have right value", *operationIt);
+                throw TSCompileError("'*' must have right value", operationIt->pos);
 
             if (newMathOperationVectorLeft.empty())
-                throw TSCompileError("'*' cannot be unary", *operationIt);
+                throw TSCompileError("'*' cannot be unary", operationIt->pos);
             
-            return mathExpressionComputer(newMathOperationVectorLeft) * mathExpressionComputer(newMathOperationVectorRight);
+            try
+            {
+                return mathExpressionComputer(newMathOperationVectorLeft) * mathExpressionComputer(newMathOperationVectorRight);
+            }
+            catch (std::overflow_error &e)
+            {
+                throw TSCompileError(e.what(), operationIt->pos);
+            }
         }
         else if (operationIt->kind == TSMathOperationKind::DIVIDE)
         {
@@ -120,15 +146,19 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
             vector<TSMathOperation> newMathOperationVectorRight(operationIt + 1, mathOperationVector.end());
 
             if (newMathOperationVectorRight.empty())
-                throw TSCompileError("'/' must have right value", *operationIt);
+                throw TSCompileError("'/' must have right value", operationIt->pos);
 
             if (newMathOperationVectorLeft.empty())
-                throw TSCompileError("'/' cannot be unary", *operationIt);
+                throw TSCompileError("'/' cannot be unary", operationIt->pos);
 
-            if (mathExpressionComputer(newMathOperationVectorRight) == 0)
-                throw TSCompileError("division by zero", *newMathOperationVectorRight.begin());
-            
-            return mathExpressionComputer(newMathOperationVectorLeft) / mathExpressionComputer(newMathOperationVectorRight);
+            try
+            {
+                return mathExpressionComputer(newMathOperationVectorLeft) / mathExpressionComputer(newMathOperationVectorRight);
+            }
+            catch (std::overflow_error &e)
+            {
+                throw TSCompileError(e.what(), operationIt->pos);
+            }
         }
         else if (operationIt->kind == TSMathOperationKind::CONSTANT)
         {
@@ -136,7 +166,7 @@ longlong mathExpressionComputer(vector<TSMathOperation> mathOperationVector)
         }
         else
         {
-            throw TSCompileError("illegal expression", *operationIt);
+            throw TSCompileError("illegal expression", operationIt->pos);
         }
     }
 }

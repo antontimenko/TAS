@@ -5,11 +5,14 @@
 #include "TSToken.h"
 #include "TSDiagnostics.h"
 #include "TSPreprocessor.h"
+#include "TSPseudoSentence.h"
+#include "TSRawSentence.h"
 #include <fstream>
 
+const TSCompiler::Arch TSCompiler::defaultArch = Arch::X86_32;
+
 TSCompiler::TSCompiler()
-{
-}
+{}
 
 void TSCompiler::compile(const string &sourceFilePath, const string &resultFilePath) const
 {
@@ -28,10 +31,12 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             auto phase3 = constructTokenContainerVector(phase2);
             auto phase4 = preprocess(phase3);
             auto phase5 = splitPseudoSentences(phase4);
+            auto phase6 = constructRawSentences(get<0>(phase5));
+            printRawSentenceTable(phase6);
         }
         catch (TSCompileError &e)
         {
-            printCompileError(e.what(), sourceFileContents, e.row(), e.column(), e.length());
+            printCompileError(e.what(), sourceFileContents, e.pos());
         }
     }
     catch (std::exception &e)

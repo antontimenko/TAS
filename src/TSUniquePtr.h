@@ -24,19 +24,24 @@ template<typename T>
 class TSUniquePtr : public std::unique_ptr<T, void(*)(T *)>
 {
 public:
+    constexpr TSUniquePtr() :
+        std::unique_ptr<T, void(*)(T *)>()
+    {}
+
     template<typename U>
     inline TSUniquePtr(U *ptr) :
         std::unique_ptr<T, void(*)(T *)>(ptr, defaultDeleter<T, U>),
         copier(defaultCopier<T, U>)
-    {
-    }
+    {}
+
     TSUniquePtr(const TSUniquePtr &ptr) = delete;
     inline TSUniquePtr(TSUniquePtr &&ptr) :
         std::unique_ptr<T, void(*)(T *)>(std::move(ptr)),
         copier(std::move(ptr.copier))
-    {
-    }
+    {}
+
     TSUniquePtr &operator=(const TSUniquePtr &ptr) = delete;
+    
     inline TSUniquePtr &operator=(TSUniquePtr &&ptr)
     {
         std::unique_ptr<T, void(*)(T *)>::operator=(std::move(ptr));
@@ -44,10 +49,12 @@ public:
 
         return *this;
     }
+
     inline TSUniquePtr<T> copy() const
     {
         return copier(this->get());
     }
+    
 private:
     std::function<TSUniquePtr<T>(T *)> copier;
 };

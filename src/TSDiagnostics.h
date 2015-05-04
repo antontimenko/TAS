@@ -2,37 +2,52 @@
 #define _TSDIAGNOSTICS_H_
 
 #include "TSGlobal.h"
+#include "TSInteger.h"
 #include "TSToken.h"
 #include "TSLexeme.h"
 #include "TSPseudoSentence.h"
+#include "TSRawSentence.h"
 
 namespace TSColor
 {
-extern const char *Reset;
-extern const char *Black;
-extern const char *Red;
-extern const char *Green;
-extern const char *Yellow;
-extern const char *Blue;
-extern const char *Magenta;
-extern const char *Cyan;
-extern const char *White;
-extern const char *BBlack;
-extern const char *BRed;
-extern const char *BGreen;
-extern const char *BYellow;
-extern const char *BBlue;
-extern const char *BMagenta;
-extern const char *BCyan;
-extern const char *BWhite;
+constexpr auto Reset = "\033[0m";
+constexpr auto Black = "\033[30m";
+constexpr auto Red = "\033[31m";
+constexpr auto Green = "\033[32m";
+constexpr auto Yellow = "\033[33m";
+constexpr auto Blue = "\033[34m";
+constexpr auto Magenta = "\033[35m";
+constexpr auto Cyan = "\033[36m";
+constexpr auto White = "\033[37m";
+constexpr auto BBlack = "\033[1m\033[30m";
+constexpr auto BRed = "\033[1m\033[31m";
+constexpr auto BGreen = "\033[1m\033[32m";
+constexpr auto BYellow = "\033[1m\033[33m";
+constexpr auto BBlue = "\033[1m\033[34m";
+constexpr auto BMagenta = "\033[1m\033[35m";
+constexpr auto BCyan = "\033[1m\033[36m";
+constexpr auto BWhite = "\033[1m\033[37m";
 }
 
 void printError(string text);
-void printCompileError(string text, const string &sourceFileContents, size_t row, size_t column, size_t length);
+void printCompileError(string text, const string &sourceFileContents, TSCodePosition pos);
 void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector);
 void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const vector<TSLexemeContainer> &lexemeContainerVector);
-void printEquTable(const map<string, longlong> &equMap);
+void printEquTable(const map<string, TSInteger> &equMap);
 void printPseudoLabelTable(const map<string, TSLabelParamType> &labelMap);
-void printPseudoSentenceTable(const vector<TSSegmentPseudoSentence> &segmentPseudoSentenceVector);
+void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &segmentPseudoSentenceVector);
+void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector);
+
+template<typename T, typename U>
+typename map<T, U>::const_iterator findByValue(const map<T, U> &source, U value)
+{
+    for (auto it = source.begin(); it != source.end(); ++it)
+    {
+        if (value == it->second)
+            return it;
+    }
+
+    return source.end();
+}
 
 #endif

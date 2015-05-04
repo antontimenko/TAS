@@ -24,48 +24,7 @@ const map<string, TSToken::SegmentDirective> TSToken::segmentDirectiveMap = {
 
 const map<string, TSToken::Instruction> &TSToken::instructionMap = TSInstruction::instructionMap;
 
-const map<string, TSToken::Register8> TSToken::register8Map = {
-    {"AL", TSToken::Register8::AL},
-    {"AH", TSToken::Register8::AH},
-    {"BL", TSToken::Register8::BL},
-    {"BH", TSToken::Register8::BH},
-    {"CL", TSToken::Register8::CL},
-    {"CH", TSToken::Register8::CH},
-    {"DL", TSToken::Register8::DL},
-    {"DH", TSToken::Register8::DH}
-};
-
-const map<string, TSToken::Register16> TSToken::register16Map = {
-    {"AX", TSToken::Register16::AX},
-    {"BX", TSToken::Register16::BX},
-    {"CX", TSToken::Register16::CX},
-    {"DX", TSToken::Register16::DX},
-    {"SP", TSToken::Register16::SP},
-    {"BP", TSToken::Register16::BP},
-    {"SI", TSToken::Register16::SI},
-    {"DI", TSToken::Register16::DI}
-};
-
-const map<string, TSToken::Register32> TSToken::register32Map = {
-    {"EAX", TSToken::Register32::EAX},
-    {"EBX", TSToken::Register32::EBX},
-    {"ECX", TSToken::Register32::ECX},
-    {"EDX", TSToken::Register32::EDX},
-    {"ESP", TSToken::Register32::ESP},
-    {"EBP", TSToken::Register32::EBP},
-    {"ESI", TSToken::Register32::ESI},
-    {"EDI", TSToken::Register32::EDI}
-};
-
-
-const map<string, TSToken::RegisterSegment> TSToken::registerSegmentMap = {
-    {"CS", TSToken::RegisterSegment::CS},
-    {"DS", TSToken::RegisterSegment::DS},
-    {"SS", TSToken::RegisterSegment::SS},
-    {"ES", TSToken::RegisterSegment::ES},
-    {"FS", TSToken::RegisterSegment::FS},
-    {"GS", TSToken::RegisterSegment::GS}
-};
+const map<string, TSToken::Register> &TSToken::registerMap = TSOperandMask::registerMap;
 
 const map<string, TSToken::SizeIdentifier> TSToken::sizeIdentifierMap = {
     {"BYTE", TSToken::SizeIdentifier::BYTE},
@@ -73,11 +32,7 @@ const map<string, TSToken::SizeIdentifier> TSToken::sizeIdentifierMap = {
     {"DWORD", TSToken::SizeIdentifier::DWORD}
 };
 
-const map<string, TSToken::DataIdentifier> TSToken::dataIdentifierMap = {
-    {"DB", TSToken::DataIdentifier::DB},
-    {"DW", TSToken::DataIdentifier::DW},
-    {"DD", TSToken::DataIdentifier::DD}
-};
+const map<string, TSToken::DataIdentifier> &TSToken::dataIdentifierMap = TSInstruction::dataIdentifierMap;
 
 const map<string, TSToken::ConditionDirective> TSToken::conditionDirectiveMap = {
     {"IF", TSToken::ConditionDirective::IF},
@@ -129,14 +84,8 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
             currentToken = TSToken(TSToken::Type::SEGMENT_DIRECTIVE, TSToken::segmentDirectiveMap.find(lexeme)->second);
         else if (TSToken::instructionMap.count(lexeme))
             currentToken = TSToken(TSToken::Type::INSTRUCTION, TSToken::instructionMap.find(lexeme)->second);
-        else if (TSToken::register8Map.count(lexeme))
-            currentToken = TSToken(TSToken::Type::REGISTER_8, TSToken::register8Map.find(lexeme)->second);
-        else if (TSToken::register16Map.count(lexeme))
-            currentToken = TSToken(TSToken::Type::REGISTER_16, TSToken::register16Map.find(lexeme)->second);
-        else if (TSToken::register32Map.count(lexeme))
-            currentToken = TSToken(TSToken::Type::REGISTER_32, TSToken::register32Map.find(lexeme)->second);
-        else if (TSToken::registerSegmentMap.count(lexeme))
-            currentToken = TSToken(TSToken::Type::REGISTER_SEGMENT, TSToken::registerSegmentMap.find(lexeme)->second);
+        else if (TSToken::registerMap.count(lexeme))
+            currentToken = TSToken(TSToken::Type::REGISTER, TSToken::registerMap.find(lexeme)->second);
         else if (TSToken::sizeIdentifierMap.count(lexeme))
             currentToken = TSToken(TSToken::Type::SIZE_IDENTIFIER, TSToken::sizeIdentifierMap.find(lexeme)->second);
         else if (TSToken::dataIdentifierMap.count(lexeme))
@@ -149,7 +98,7 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
             currentToken = TSToken(TSToken::Type::CONSTANT_STRING, lexeme.substr(1, lexeme.size() - 2));
         else if (isCharNumberCompatible(lexeme[0]))
         {
-            longlong number;
+            TSInteger number;
 
             try
             {
@@ -158,33 +107,39 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
 
                 if (isCharNumberCompatible(lexeme[lexeme.size() - 1]))
                 {
-                    number = std::stoll(lexeme, &stoiStop, 10);
+                    number = std::stoull(lexeme, &stoiStop, 10);
                     realNumberSize = lexeme.size();
                 }
                 else if (lexeme[lexeme.size() - 1] == 'D')
                 {
-                    number = std::stoll(lexeme, &stoiStop, 10);
+                    number = std::stoull(lexeme, &stoiStop, 10);
                     realNumberSize = lexeme.size() - 1;
                 }
                 else if (lexeme[lexeme.size() - 1] == 'B')
                 {
-                    number = std::stoll(lexeme, &stoiStop, 2);
+                    number = std::stoull(lexeme, &stoiStop, 2);
                     realNumberSize = lexeme.size() - 1;
                 }
                 else if (lexeme[lexeme.size() - 1] == 'H')
                 {
-                    number = std::stoll(lexeme, &stoiStop, 16);
+                    number = std::stoull(lexeme, &stoiStop, 16);
                     realNumberSize = lexeme.size() - 1;
                 }
                 else
-                    throw TSCompileError("Invalid numeric constant", lexemeContainer.row, lexemeContainer.column, lexeme.size());
+                    throw TSCompileError("Invalid numeric constant", {lexemeContainer.row,
+                                                                      lexemeContainer.column,
+                                                                      lexeme.size()});
                 
                 if (stoiStop != realNumberSize)
-                    throw TSCompileError("Invalid numeric constant", lexemeContainer.row, lexemeContainer.column, lexeme.size());
+                    throw TSCompileError("Invalid numeric constant", {lexemeContainer.row,
+                                                                      lexemeContainer.column,
+                                                                      lexeme.size()});
             }
             catch (std::exception &e)
             {
-                throw TSCompileError("Invalid numeric constant", lexemeContainer.row, lexemeContainer.column, lexeme.size());
+                throw TSCompileError("Invalid numeric constant", {lexemeContainer.row,
+                                                                  lexemeContainer.column,
+                                                                  lexeme.size()});
             }
 
             currentToken = TSToken(TSToken::Type::CONSTANT_NUMBER, number);
@@ -192,10 +147,9 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
         else
             currentToken = TSToken(TSToken::Type::USER_IDENTIFIER, lexeme);
 
-        tokenContainerVector.push_back({it->row,
-                                        it->column,
-                                        it->lexeme.size(),
-                                        currentToken});
+        tokenContainerVector.push_back({{it->row,
+                                         it->column,
+                                         it->lexeme.size()}, currentToken});
     }
 
     return tokenContainerVector;

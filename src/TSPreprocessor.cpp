@@ -1,12 +1,13 @@
 #include "TSPreprocessor.h"
 
 #include "TSException.h"
+#include "TSInteger.h"
 #include "TSMath.h"
 #include "TSDiagnostics.h"
 #include <functional>
 #include <algorithm>
 
-vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
+vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector, const map<string, TSInteger> &equMap)
 {
     vector<TSMathOperation> mathOperationVector;
 
@@ -43,26 +44,20 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
             }
 
             currentOperation = {currentOperationKind,
-                                0,
-                                tokenContainer.row,
-                                tokenContainer.column,
-                                tokenContainer.length};
+                                0_I,
+                                tokenContainer.pos};
         }
         else if (token.type() == TSToken::Type::USER_IDENTIFIER)
         {
             currentOperation = {TSMathOperationKind::CONSTANT,
                                 equMap.find(token.value<string>())->second,
-                                tokenContainer.row,
-                                tokenContainer.column,
-                                tokenContainer.length};
+                                tokenContainer.pos};
         }
         else if (token.type() == TSToken::Type::CONSTANT_NUMBER)
         {
             currentOperation = {TSMathOperationKind::CONSTANT,
-                                token.value<longlong>(),
-                                tokenContainer.row,
-                                tokenContainer.column,
-                                tokenContainer.length};
+                                token.value<TSInteger>(),
+                                tokenContainer.pos};
         }
 
         mathOperationVector.push_back(currentOperation);
@@ -71,7 +66,7 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
     return mathOperationVector;
 }
 
-longlong computeMath(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> equMap)
+TSInteger computeMath(const vector<TSTokenContainer> &tokenContainerVector, const map<string, TSInteger> equMap)
 {
     return mathExpressionComputer(convertToMathOperationVector(tokenContainerVector, equMap));
 }
@@ -90,22 +85,22 @@ auto excludeUsedTokens(const vector<TSTokenContainer> &base, const vector<TSToke
     return newBase;
 }
 
-auto getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
+vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end)
 {
     auto requireRightParam = [](const TSToken &token) -> bool {
         return (token.type() == TSToken::Type::MATH_SYMBOL) &&
-                   (token.value<TSToken::MathSymbol>() != TSToken::MathSymbol::BRACKET_CLOSE);
+               (token.value<TSToken::MathSymbol>() != TSToken::MathSymbol::BRACKET_CLOSE);
     };
     
     auto it = begin;
     while ((it != end) &&
            ((it->token.type() == TSToken::Type::MATH_SYMBOL) ||
             ((it->token.type() == TSToken::Type::USER_IDENTIFIER) &&
-             ((requireRightParam((it - 1)->token)) ||
-              (it == begin))) ||
+             ((it == begin) ||
+              (requireRightParam((it - 1)->token)))) ||
             ((it->token.type() == TSToken::Type::CONSTANT_NUMBER) &&
-             ((requireRightParam((it - 1)->token)) ||
-              (it == begin)))))
+             ((it == begin) ||
+              (requireRightParam((it - 1)->token))))))
     {
         ++it;
     }
@@ -133,24 +128,24 @@ auto processEQUs(const vector<TSTokenContainer> &tokenContainerVector)
             excludes.insert(excludes.end(), it + 1, equTokenEnd);
 
             if (currentEquTokenContainer.empty())
-                throw TSCompileError("EQU must have an integer value", tokenContainer);
+                throw TSCompileError("EQU must have an integer value", tokenContainer.pos);
 
             if ((it == tokenContainerVector.begin()) ||
                 ((it - 1)->token.type() != TSToken::Type::USER_IDENTIFIER))
-                throw TSCompileError("EQU must define an user identifier", tokenContainer);
+                throw TSCompileError("EQU must define an user identifier", tokenContainer.pos);
 
             excludes.push_back(*(it - 1));
 
             if (equMapUnprocessed.count((it - 1)->token.value<string>()))
-                throw TSCompileError("redefinition of EQU constant is illegal", tokenContainer);
+                throw TSCompileError("redefinition of EQU constant is illegal", tokenContainer.pos);
 
             equMapUnprocessed[(it - 1)->token.value<string>()] = currentEquTokenContainer;
         }
     }
 
-    map<string, longlong> equMap;
+    map<string, TSInteger> equMap;
 
-    std::function<void(string, vector<string> &)> recursiveEquComputer = [&](string equName, vector<string> &recProtect) {
+    function<void(string, vector<string> &)> recursiveEquComputer = [&](string equName, vector<string> &recProtect) {
         if (!equMap.count(equName))
         {
             vector<TSTokenContainer> currentEquTokenContainer(equMapUnprocessed[equName]);
@@ -167,14 +162,14 @@ auto processEQUs(const vector<TSTokenContainer> &tokenContainerVector)
                         if (!equMap.count(token.value<string>()))
                         {
                             if (std::find(recProtect.begin(), recProtect.end(), token.value<string>()) != recProtect.end())
-                                throw TSCompileError("recursive EQUs are impossible", tokenContainer);
+                                throw TSCompileError("recursive EQUs are impossible", tokenContainer.pos);
                             
                             recProtect.push_back(token.value<string>());
                             recursiveEquComputer(token.value<string>(), recProtect);
                         }
                     }
                     else
-                        throw TSCompileError("identifier is not constant", tokenContainer);
+                        throw TSCompileError("identifier is not constant", tokenContainer.pos);
                 }
             }
 
@@ -189,18 +184,18 @@ auto processEQUs(const vector<TSTokenContainer> &tokenContainerVector)
         recursiveEquComputer(it->first, recProtect);
     }
 
-    return tuple<map<string, longlong>, vector<TSTokenContainer>>(equMap, excludeUsedTokens(tokenContainerVector, excludes));
+    return make_tuple(equMap, excludeUsedTokens(tokenContainerVector, excludes));
 }
 
-auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<string, longlong> &equMap)
+auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<string, TSInteger> &equMap)
 {
     vector<TSTokenContainer> excludes;
 
     typedef vector<TSTokenContainer>::const_iterator ItType;
 
-    std::function<void(ItType, ItType, bool)> ifContentAnalyzer;
+    function<void(ItType, ItType, bool)> ifContentAnalyzer;
 
-    std::function<void(ItType, ItType)> ifAnalyzer = [&](ItType begin, ItType end) {
+    function<void(ItType, ItType)> ifAnalyzer = [&](ItType begin, ItType end) {
         ItType it = begin;
         size_t ifCount = 0;
         ItType ifIt = end;
@@ -217,12 +212,12 @@ auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<
                 else if (it->token.value<TSToken::ConditionDirective>() == TSToken::ConditionDirective::ELSE)
                 {
                     if (ifCount == 0)
-                        throw TSCompileError("must only be after IF", *it);
+                        throw TSCompileError("must only be after IF", it->pos);
                 }
                 else
                 {
                     if (ifCount == 0)
-                        throw TSCompileError("must only be after IF", *it);
+                        throw TSCompileError("must only be after IF", it->pos);
                     else if (ifCount > 1)
                         --ifCount;
                     else
@@ -236,14 +231,14 @@ auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<
 
                         ItType leftExprEnd = getMathTokenSequence(jt, it);
                         if (leftExprEnd == jt)
-                            throw TSCompileError("IF must compare int value", *(jt - 1));
+                            throw TSCompileError("IF must compare int value", (jt - 1)->pos);
 
-                        longlong leftNumber = computeMath(vector<TSTokenContainer>(jt, leftExprEnd), equMap);
+                        TSInteger leftNumber = computeMath(vector<TSTokenContainer>(jt, leftExprEnd), equMap);
                         excludes.insert(excludes.end(), jt, leftExprEnd);
                         jt = leftExprEnd;
 
                         if (jt->token.type() != TSToken::Type::CONDITION)
-                            throw TSCompileError("there must be condition after expression", *(jt - 1));
+                            throw TSCompileError("there must be condition after expression", (jt - 1)->pos);
 
                         TSToken::Condition condition = jt->token.value<TSToken::Condition>();
                         excludes.push_back(*jt);
@@ -251,9 +246,9 @@ auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<
 
                         ItType rightExprEnd = getMathTokenSequence(jt, it);
                         if (rightExprEnd == jt)
-                            throw TSCompileError("IF must compare to int value", *(jt - 1));
+                            throw TSCompileError("IF must compare to int value", (jt - 1)->pos);
 
-                        longlong rightNumber = computeMath(vector<TSTokenContainer>(jt, rightExprEnd), equMap);
+                        TSInteger rightNumber = computeMath(vector<TSTokenContainer>(jt, rightExprEnd), equMap);
                         excludes.insert(excludes.end(), jt, rightExprEnd);
                         jt = rightExprEnd;
 
@@ -290,14 +285,14 @@ auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<
             else if (it->token.type() == TSToken::Type::CONDITION)
             {
                 if (ifCount == 0)
-                    throw TSCompileError("conditions without IF is illegal", *it);
+                    throw TSCompileError("conditions without IF is illegal", it->pos);
             }
 
             ++it;
         }
 
         if (ifCount != 0)
-            throw TSCompileError("unclosed IF", *ifIt);
+            throw TSCompileError("unclosed IF", ifIt->pos);
     };
 
     ifContentAnalyzer = [&](ItType begin, ItType end, bool isConditionTrue) {
@@ -356,7 +351,7 @@ auto processIFs(const vector<TSTokenContainer> &tokenContainerVector, const map<
     return excludeUsedTokens(tokenContainerVector, excludes);
 }
 
-auto processSymbolicConstantReplace(vector<TSTokenContainer> tokenContainerVector, const map<string, longlong> &equMap)
+auto processSymbolicConstantReplace(vector<TSTokenContainer> tokenContainerVector, const map<string, TSInteger> &equMap)
 {
     for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it)
     {
@@ -364,12 +359,7 @@ auto processSymbolicConstantReplace(vector<TSTokenContainer> tokenContainerVecto
         {
             string identifier = it->token.value<string>();
             if (equMap.count(identifier))
-            {
-                *it = {it->row,
-                       it->column,
-                       it->length,
-                       TSToken(TSToken::Type::CONSTANT_NUMBER, equMap.find(identifier)->second)};
-            }
+                *it = {it->pos, TSToken(TSToken::Type::CONSTANT_NUMBER, equMap.find(identifier)->second)};
         }
     }
 
@@ -378,7 +368,7 @@ auto processSymbolicConstantReplace(vector<TSTokenContainer> tokenContainerVecto
 
 auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector)
 {
-    vector<TSSegmentTokenContainer> segmentTokenContainerVector;
+    vector<TSTokenContainersSegmentContainer> segmentTokenContainerVector;
 
     vector<TSTokenContainer> excludes;
 
@@ -395,10 +385,10 @@ auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector
                         ((it - 1)->token.type() == TSToken::Type::USER_IDENTIFIER))
                         segmentStartIt = it;
                     else
-                        throw TSCompileError("SEGMENT must have a name", *it);
+                        throw TSCompileError("SEGMENT must have a name", it->pos);
                 }
                 else
-                    throw TSCompileError("you cannot declare a segment inside another one", *it);
+                    throw TSCompileError("you cannot declare a segment inside another one", it->pos);
             }
             else
             {
@@ -408,18 +398,18 @@ auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector
                         ((it - 1)->token.type() == TSToken::Type::USER_IDENTIFIER) &&
                         ((it - 1)->token.value<string>() == (segmentStartIt - 1)->token.value<string>()))
                     {
-                        segmentTokenContainerVector.push_back({(it - 1)->token.value<string>(),
-                                                          vector<TSTokenContainer>(segmentStartIt + 1, it - 1)});
+                        segmentTokenContainerVector.push_back(make_tuple((it - 1)->token.value<string>(),
+                                                                         vector<TSTokenContainer>(segmentStartIt + 1, it - 1)));
 
                         excludes.insert(excludes.end(), segmentStartIt - 1, it + 1);
 
                         segmentStartIt = tokenContainerVector.end();
                     }
                     else
-                        throw TSCompileError("ENDS require a name", *it);
+                        throw TSCompileError("ENDS require a name", it->pos);
                 }
                 else
-                    throw TSCompileError("ENDS must end a SEGMENT", *it);
+                    throw TSCompileError("ENDS must end a SEGMENT", it->pos);
             }
         }
     }
@@ -433,35 +423,35 @@ auto processSegmentsParting(const vector<TSTokenContainer> &tokenContainerVector
         remains.erase(remains.end() - 2, remains.end());
 
     if (!remains.empty())
-        throw TSCompileError("undefined expression outside segment", *remains.begin());
+        throw TSCompileError("undefined expression outside segment", remains.begin()->pos);
 
     return segmentTokenContainerVector;
 }
 
-void checkSegmentNameExistance(const vector<TSSegmentTokenContainer> &segmentTokenContainerVector)
+void checkSegmentNameExistance(const vector<TSTokenContainersSegmentContainer> &segmentTokenContainerVector)
 {
     vector<string> segmentNameVector;
     for (auto it = segmentTokenContainerVector.begin(); it != segmentTokenContainerVector.end(); ++it)
-        segmentNameVector.push_back(it->name);
+        segmentNameVector.push_back(get<0>(*it));
 
     for (auto it = segmentTokenContainerVector.begin(); it != segmentTokenContainerVector.end(); ++it)
     {
-        for (auto jt = it->tokenContainerVector.begin(); jt != it->tokenContainerVector.end(); ++jt)
+        for (auto jt = get<1>(*it).begin(); jt != get<1>(*it).end(); ++jt)
         {
             if ((jt->token.type() == TSToken::Type::USER_IDENTIFIER) &&
                 (std::count(segmentNameVector.begin(), segmentNameVector.end(), jt->token.value<string>())))
             {
-                throw TSCompileError("segment name usage is not implemented yet", *jt);
+                throw TSCompileError("segment name usage is not implemented yet", jt->pos);
             }
         }
     }
 }
 
-vector<TSSegmentTokenContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector)
+vector<TSTokenContainersSegmentContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector)
 {
     auto equPhaseResult = processEQUs(tokenContainerVector);
-    auto ifPhaseResult = processIFs(std::get<1>(equPhaseResult), std::get<0>(equPhaseResult));
-    auto constantReplaceResult = processSymbolicConstantReplace(ifPhaseResult, std::get<0>(equPhaseResult));
+    auto ifPhaseResult = processIFs(get<1>(equPhaseResult), get<0>(equPhaseResult));
+    auto constantReplaceResult = processSymbolicConstantReplace(ifPhaseResult, get<0>(equPhaseResult));
     auto segmentsPartingResult = processSegmentsParting(constantReplaceResult);
     checkSegmentNameExistance(segmentsPartingResult);
     return segmentsPartingResult;
