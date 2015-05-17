@@ -3,6 +3,8 @@
 
 #include "TSGlobal.h"
 #include "TSOperandMask.h"
+#include "TSInteger.h"
+#include <initializer_list>
 #include <bitset>
 
 namespace TSOperandMask
@@ -11,6 +13,8 @@ namespace TSOperandMask
 extern const map<string, Mask> registerMap;
 
 };
+
+class TSInstructionSentence;
 
 namespace TSInstruction
 {
@@ -37,6 +41,58 @@ enum class DataIdentifier
 
 extern const map<string, Instruction> instructionMap;
 extern const map<string, DataIdentifier> dataIdentifierMap;
+
+class OperandFullMask
+{
+public:
+    inline OperandFullMask(TSOperandMask::Mask mask, TSInteger num) :
+        mask(mask),
+        num(num)
+    {}
+
+    inline OperandFullMask(TSOperandMask::Mask mask) :
+        mask(mask)
+    {}
+
+    TSOperandMask::Mask mask;
+    optional<TSInteger> num;
+};
+
+class Definition
+{
+public:
+    typedef TSInstruction::Instruction Instruction;
+
+    inline Definition(vector<TSInteger> opcode,
+                      TSInteger opcodeAdd,
+                      Instruction inst,
+                      vector<OperandFullMask> operandFullMasks,
+                      function<vector<uchar>(Definition, TSInstructionSentence)> computeFunc) :
+        opcode(opcode),
+        opcodeAdd(opcodeAdd),
+        instruction(inst),
+        operandFullMasks(operandFullMasks),
+        computeFunc(computeFunc)
+    {}
+
+    inline Definition(vector<TSInteger> opcode,
+                      Instruction inst,
+                      vector<OperandFullMask> operandFullMasks,
+                      function<vector<uchar>(Definition, TSInstructionSentence)> computeFunc) :
+        opcode(opcode),
+        instruction(inst),
+        operandFullMasks(operandFullMasks),
+        computeFunc(computeFunc)
+    {}
+
+    vector<TSInteger> opcode;
+    optional<TSInteger> opcodeAdd;
+    Instruction instruction;
+    vector<OperandFullMask> operandFullMasks;
+    function<vector<uchar>(Definition, TSInstructionSentence)> computeFunc;
+};
+
+extern const vector<Definition> instructionDefinitionVector;
 
 }
 

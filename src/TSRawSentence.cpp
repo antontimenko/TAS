@@ -9,6 +9,11 @@
 
 using namespace TSOperandMask;
 
+TSCodePosition TSRawSentence::pos() const
+{
+    return _pos;
+}
+
 TSRawInstructionSentence::Prefix getSegmentOverridePrefix(const TSToken &token)
 {
     TSToken::Register reg = token.value<TSToken::Register>();
@@ -76,7 +81,7 @@ auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainer
             }
 
             currentOperation = {currentOperationKind,
-                                0_I,
+                                0,
                                 tokenContainer.pos};
         }
         else if (token.type() == TSToken::Type::CONSTANT_NUMBER)
@@ -93,6 +98,7 @@ auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainer
 };
 
 TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseudoSentence) :
+    TSRawSentence(pseudoSentence.baseTokenContainer.pos),
     instruction(pseudoSentence.baseTokenContainer.token.value<TSToken::Instruction>())
 {
     typedef vector<TSTokenContainer>::const_iterator ItType;
@@ -140,9 +146,10 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
             const TSToken &token = tokenContainerVector[0].token;
 
             if (token.type() == TSToken::Type::REGISTER)
-                operandContainerVector.push_back(OperandContainer({token.value<TSToken::Register>(), {0_I, nullopt}}, tokenContainerVector[0].pos));
-
-            continue;
+            {
+                operandContainerVector.push_back(OperandContainer({token.value<TSToken::Register>(), {0, nullopt}}, tokenContainerVector[0].pos));
+                continue;
+            }
         }
 
         TSCodePosition operandPos = calculatePos(tokenContainerVector.begin(), tokenContainerVector.end());
@@ -325,25 +332,25 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                         TSInteger indexIntFact = immTokenContainer.token.value<TSInteger>();
                         Mask reg = regTokenContainer.token.value<Mask>();
                         
-                        if (indexIntFact == 1_I)
+                        if (indexIntFact == 1)
                         {
                             indexReg = reg;
                             indexMult = MEM_32_INDEX_MULT1;
                             continue;
                         }
-                        else if (indexIntFact == 2_I)
+                        else if (indexIntFact == 2)
                         {
                             indexReg = reg;
                             indexMult = MEM_32_INDEX_MULT2;
                             continue;
                         }
-                        else if (indexIntFact == 4_I)
+                        else if (indexIntFact == 4)
                         {
                             indexReg = reg;
                             indexMult = MEM_32_INDEX_MULT4;
                             continue;
                         }
-                        else if (indexIntFact == 8_I)
+                        else if (indexIntFact == 8)
                         {
                             indexReg = reg;
                             indexMult = MEM_32_INDEX_MULT8;
@@ -505,83 +512,115 @@ string TSRawInstructionSentence::Operand::present() const
         return findByValue(registerMap, mask)->first;
     else if (mask.match(MEM))
     {
-        string memStr = "[";
+        string memStr;
+        
+        if (mask.match(S8))
+            memStr += "BYTE ";
+        else if (mask.match(S16))
+            memStr += "WORD ";
+        else if (mask.match(S32))
+            memStr += "DWORD ";
+
+        memStr += "[";
+
+        string innerMemStr;
 
         if (mask.match(MEM_16))
         {
             if (mask.match(MEM_16_BX_SI))
-                memStr += "BX+SI";
+                innerMemStr += "BX+SI";
             else if (mask.match(MEM_16_BX_DI))
-                memStr += "BX+DI";
+                innerMemStr += "BX+DI";
             else if (mask.match(MEM_16_BP_SI))
-                memStr += "BP+SI";
+                innerMemStr += "BP+SI";
             else if (mask.match(MEM_16_BP_DI))
-                memStr += "BP+DI";
+                innerMemStr += "BP+DI";
             else if (mask.match(MEM_16_SI))
-                memStr += "SI";
+                innerMemStr += "SI";
             else if (mask.match(MEM_16_DI))
-                memStr += "DI";
+                innerMemStr += "DI";
             else if (mask.match(MEM_16_BP))
-                memStr += "BP";
+                innerMemStr += "BP";
             else
-                memStr += "BX";
+                innerMemStr += "BX";
         }
         else
         {
             if (mask.match(MEM_BASE))
             {
                 Mask baseReg = (mask & OPVAL_ANY) | UREG32;
-                memStr += findByValue(registerMap, baseReg)->first;
+                innerMemStr += findByValue(registerMap, baseReg)->first;
             }
 
             if (mask.match(MEM_32_INDEX))
             {
-                memStr += "+";
+                if (!innerMemStr.empty())
+                    innerMemStr += "+";
                 Mask indexReg = ((mask >> 8) & OPVAL_ANY) | UREG32;
-                memStr += findByValue(registerMap, indexReg)->first;
+                innerMemStr += findByValue(registerMap, indexReg)->first;
                 if (mask.match(MEM_32_INDEX_MULT2))
-                    memStr += "*2";
+                    innerMemStr += "*2";
                 else if (mask.match(MEM_32_INDEX_MULT4))
-                    memStr += "*4";
+                    innerMemStr += "*4";
                 else if (mask.match(MEM_32_INDEX_MULT8))
-                    memStr += "*8";
+                    innerMemStr += "*8";
             }
         }
 
-        if (rawNum.num != 0_I)
+        if (innerMemStr.empty())
         {
-            if (memStr.size() != 1)
-                memStr += rawNum.num.str(true);
+            if (rawNum.num == 0)
+                if (rawNum.labelStr)
+                    innerMemStr += *rawNum.labelStr;
+                else
+                    innerMemStr += "0";
             else
-                memStr += rawNum.num.str();
-        }
+            {
+                innerMemStr += rawNum.num.str();
 
-        if (rawNum.labelStr)
+                if (rawNum.labelStr)
+                    innerMemStr += "+" + *rawNum.labelStr;
+            }
+        }
+        else
         {
-            if (memStr.size() != 1)
-                memStr += "+";
-            memStr += *rawNum.labelStr;
+            if (rawNum.num == 0)
+            {
+                if (rawNum.labelStr)
+                    innerMemStr += "+" + *rawNum.labelStr;
+            }
+            else
+            {
+                innerMemStr += rawNum.num.str(true);
+
+                if (rawNum.labelStr)
+                    innerMemStr += "+" + *rawNum.labelStr;
+            }
         }
 
-        memStr += "]";
+        memStr += innerMemStr + "]";
 
         return memStr;
     }
     else
     {
         string immStr;
+        
+        if (mask.match(S8))
+            immStr += "BYTE ";
+        else if (mask.match(S16))
+            immStr += "WORD ";
+        else if (mask.match(S32))
+            immStr += "DWORD ";
 
-        if (rawNum.num != 0_I)
-            immStr += rawNum.num.str();
-
-        if (rawNum.labelStr)
-            immStr += "+" + *rawNum.labelStr;
+        immStr += rawNum.num.str();
 
         return immStr;
     }
 }
 
 TSRawDataSentence::TSRawDataSentence(const TSPseudoSentence &pseudoSentence) :
+    TSRawSentence(pseudoSentence.baseTokenContainer.pos),
     dataIdentifier(pseudoSentence.baseTokenContainer.token.value<TSToken::DataIdentifier>())
 {
     const vector<vector<TSTokenContainer>> &operandsTokenContainerVector = pseudoSentence.operandsTokenContainerVector;
@@ -662,13 +701,23 @@ tuple<string, vector<string>> TSRawDataSentence::present() const
     vector<string> operandStrVector;
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
     {
+        const TSRawNumber &rawNum = get<0>(*it);
+        
         string str;
+        if (rawNum.num == 0)
+        {
+            if (rawNum.labelStr)
+                str += *rawNum.labelStr;
+            else
+                str += "0";
+        }
+        else
+        {
+            str += rawNum.num.str();
 
-        if (get<0>(*it).num != 0_I)
-            str += get<0>(*it).num.str();
-
-        if (get<0>(*it).labelStr)
-            str += "+" + *get<0>(*it).labelStr;
+            if (rawNum.labelStr)
+                str += "+" + *rawNum.labelStr;
+        }
 
         operandStrVector.push_back(str);
     }

@@ -7,6 +7,7 @@
 #include "TSLexeme.h"
 #include "TSPseudoSentence.h"
 #include "TSRawSentence.h"
+#include "TSSentence.h"
 
 namespace TSColor
 {
@@ -37,6 +38,7 @@ void printEquTable(const map<string, TSInteger> &equMap);
 void printPseudoLabelTable(const map<string, TSLabelParamType> &labelMap);
 void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &segmentPseudoSentenceVector);
 void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector);
+void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector);
 
 template<typename T, typename U>
 typename map<T, U>::const_iterator findByValue(const map<T, U> &source, U value)

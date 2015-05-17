@@ -5,7 +5,7 @@
 TSInteger mathExpressionComputer(const vector<TSMathOperation> &mathOperationVector)
 {
     if (mathOperationVector.empty())
-        return 0_I;
+        return 0;
 
     auto operationIt = mathOperationVector.end();
 

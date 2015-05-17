@@ -44,7 +44,7 @@ vector<TSMathOperation> convertToMathOperationVector(const vector<TSTokenContain
             }
 
             currentOperation = {currentOperationKind,
-                                0_I,
+                                0,
                                 tokenContainer.pos};
         }
         else if (token.type() == TSToken::Type::USER_IDENTIFIER)

@@ -7,6 +7,7 @@
 #include "TSPreprocessor.h"
 #include "TSPseudoSentence.h"
 #include "TSRawSentence.h"
+#include "TSSentence.h"
 #include <fstream>
 
 const TSCompiler::Arch TSCompiler::defaultArch = Arch::X86_32;
@@ -32,7 +33,8 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             auto phase4 = preprocess(phase3);
             auto phase5 = splitPseudoSentences(phase4);
             auto phase6 = constructRawSentences(get<0>(phase5));
-            printRawSentenceTable(phase6);
+            auto phase7 = constructSentences(phase6, get<1>(phase5));
+            printSentenceTable(phase7);
         }
         catch (TSCompileError &e)
         {

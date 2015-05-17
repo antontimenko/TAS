@@ -360,11 +360,27 @@ void printPseudoLabelTable(const map<string, TSLabelParamType> &labelMap)
 
 void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &segmentPseudoSentenceVector)
 {
+    size_t maxOpsAmmount = 0;
+    for (auto segIt = segmentPseudoSentenceVector.begin(); segIt != segmentPseudoSentenceVector.end(); ++segIt)
+    {
+        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
+        {
+            if (it->operandsTokenContainerVector.size() > maxOpsAmmount)
+                maxOpsAmmount = it->operandsTokenContainerVector.size();
+        }
+    }
+
+    vector<vector<string>> strOperandsVector;
+
+    for (size_t i = 0; i < maxOpsAmmount; ++i)
+    {
+        vector<string> strOperandVector(1, string("Op ") + std::to_string(i + 1));
+        strOperandsVector.push_back(strOperandVector);
+    }
+
     vector<string> strIndexVector{"Index"};
     vector<string> strNameVector{"Name"};
     vector<string> strSegmentVector{"Segment"};
-
-    vector<vector<string>> strOperandsVector;
 
     for (auto segIt = segmentPseudoSentenceVector.begin(); segIt != segmentPseudoSentenceVector.end(); ++segIt)
     {
@@ -374,19 +390,9 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
             strNameVector.push_back(getTokenString(it->baseTokenContainer.token));
             strSegmentVector.push_back(get<0>(*segIt));
 
-            for (size_t i = 0; i < it->operandsTokenContainerVector.size(); ++i)
+            size_t i;
+            for (i = 0; i < it->operandsTokenContainerVector.size(); ++i)
             {
-                if ((i + 1) > strOperandsVector.size())
-                {
-                    strOperandsVector.push_back({string("Op ") + std::to_string(i + 1)});
-
-                    if (strOperandsVector.size() > 1)
-                    {
-                        vector<string> &operandVector = *(strOperandsVector.end() - 1);
-                        operandVector.insert(operandVector.end(), (strOperandsVector.end() - 2)->size() - 2, "");
-                    }
-                }
-
                 string opStr;
                 for (size_t j = 0; j < it->operandsTokenContainerVector[i].size(); ++j)
                     opStr += getTokenString(it->operandsTokenContainerVector[i][j].token) + ' ';
@@ -394,7 +400,7 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
                 strOperandsVector[i].push_back(opStr);
             }
 
-            for (size_t i = it->operandsTokenContainerVector.size(); i < strOperandsVector.size(); ++i)
+            for (; i < strOperandsVector.size(); ++i)
                 strOperandsVector[i].push_back("");
         }
     }
@@ -407,11 +413,30 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
 
 void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector)
 {
+    size_t maxOpsAmmount = 0;
+    for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt)
+    {
+        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
+        {
+            auto present = (*it)->present();
+            const vector<string> &operandStrVector = get<1>(present);
+
+            if (operandStrVector.size() > maxOpsAmmount)
+                maxOpsAmmount = operandStrVector.size();
+        }
+    }
+
+    vector<vector<string>> strOperandsVector;
+
+    for (size_t i = 0; i < maxOpsAmmount; ++i)
+    {
+        vector<string> strOperandVector(1, string("Op ") + std::to_string(i + 1));
+        strOperandsVector.push_back(strOperandVector);
+    }
+
     vector<string> strIndexVector{"Index"};
     vector<string> strNameVector{"Name"};
     vector<string> strSegmentVector{"Segment"};
-
-    vector<vector<string>> strOperandsVector;
 
     for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt)
     {
@@ -424,23 +449,13 @@ void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSent
             strNameVector.push_back(get<0>(present));
             strSegmentVector.push_back(get<0>(*segIt));
 
-            for (size_t i = 0; i < operandStrVector.size(); ++i)
+            size_t i;
+            for (i = 0; i < operandStrVector.size(); ++i)
             {
-                if ((i + 1) > strOperandsVector.size())
-                {
-                    strOperandsVector.push_back({string("Op ") + std::to_string(i + 1)});
-
-                    if (strOperandsVector.size() > 1)
-                    {
-                        vector<string> &operandVector = *(strOperandsVector.end() - 1);
-                        operandVector.insert(operandVector.end(), (strOperandsVector.end() - 2)->size() - 2, "");
-                    }
-                }
-
                 strOperandsVector[i].push_back(operandStrVector[i]);
             }
 
-            for (size_t i = operandStrVector.size(); i < strOperandsVector.size(); ++i)
+            for (; i < strOperandsVector.size(); ++i)
                 strOperandsVector[i].push_back("");
         }
     }
@@ -449,4 +464,59 @@ void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSent
     strTableVectors.insert(strTableVectors.end(), strOperandsVector.begin(), strOperandsVector.end());
 
     printTable("Raw Sentence Table", strTableVectors);
+}
+
+void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector)
+{
+    size_t maxOpsAmmount = 0;
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
+    {
+        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
+        {
+            auto present = (*it)->present();
+            const vector<string> &operandStrVector = get<1>(present);
+
+            if (operandStrVector.size() > maxOpsAmmount)
+                maxOpsAmmount = operandStrVector.size();
+        }
+    }
+
+    vector<vector<string>> strOperandsVector;
+
+    for (size_t i = 0; i < maxOpsAmmount; ++i)
+    {
+        vector<string> strOperandVector(1, string("Op ") + std::to_string(i + 1));
+        strOperandsVector.push_back(strOperandVector);
+    }
+
+    vector<string> strIndexVector{"Index"};
+    vector<string> strNameVector{"Name"};
+    vector<string> strSegmentVector{"Segment"};
+
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
+    {
+        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
+        {
+            auto present = (*it)->present();
+            const vector<string> &operandStrVector = get<1>(present);
+
+            strIndexVector.push_back(std::to_string(it - get<1>(*segIt).begin()));
+            strNameVector.push_back(get<0>(present));
+            strSegmentVector.push_back(get<0>(*segIt));
+
+            size_t i;
+            for (i = 0; i < operandStrVector.size(); ++i)
+            {
+                strOperandsVector[i].push_back(operandStrVector[i]);
+            }
+
+            for (; i < strOperandsVector.size(); ++i)
+                strOperandsVector[i].push_back("");
+        }
+    }
+
+    vector<vector<string>> strTableVectors{strIndexVector, strNameVector, strSegmentVector};
+    strTableVectors.insert(strTableVectors.end(), strOperandsVector.begin(), strOperandsVector.end());
+
+    printTable("Sentence Table", strTableVectors);
 }

@@ -13,7 +13,8 @@ SOURCES= \
 	TSMath.cpp \
 	TSPseudoSentence.cpp \
 	TSInstruction.cpp \
-	TSRawSentence.cpp
+	TSRawSentence.cpp \
+	TSSentence.cpp
 
 all: build_dir tas
 
