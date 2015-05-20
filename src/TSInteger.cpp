@@ -371,6 +371,11 @@ vector<uchar> TSInteger::getCharArrayUnsigned(Size size) const
     return res;
 }
 
+vector<uchar> TSInteger::getCharArrayAny(Size size) const
+{
+    return getCharArrayUnsigned(size);
+}
+
 TSInteger TSInteger::getMaxValSigned(Size size)
 {
     switch (size)

@@ -15,7 +15,7 @@ public:
     void compile(const string &sourceFilePath, const string &resultFilePath) const;
     static TSCompiler &instance();
 
-    static const Arch defaultArch;
+    static const Arch arch;
 private:
     TSCompiler();
     TSCompiler(const TSCompiler &) = delete;

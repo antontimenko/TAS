@@ -1,5 +1,9 @@
 #include "TSDiagnostics.h"
 
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+
 const map<TSToken::Type, string> tokenTypeDescriptionMap = {
     {TSToken::Type::USER_IDENTIFIER, "User Identifier"},
     {TSToken::Type::MEMORY_BRACKET, "Memory Bracket"},
@@ -519,4 +523,72 @@ void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegm
     strTableVectors.insert(strTableVectors.end(), strOperandsVector.begin(), strOperandsVector.end());
 
     printTable("Sentence Table", strTableVectors);
+}
+
+string hexStringFromSentenceBytePresentation(const vector<vector<uchar>> &sentenceBytePresentation)
+{
+    std::stringstream strStream;
+    strStream << std::hex << std::uppercase << std::setfill('0');
+    
+    for (auto it = sentenceBytePresentation.begin(); it != sentenceBytePresentation.end(); ++it)
+    {
+        auto jt = it->end();
+        do
+        {
+            --jt;
+
+            strStream << std::setw(2) << (unsigned int)*jt;
+        } while (jt != it->begin());
+
+        if (it != sentenceBytePresentation.end() - 1)
+            strStream << ' ';
+    }
+
+    return strStream.str();
+}
+
+void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const map<string, TSLabelParamType> &labelMap)
+{
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
+    {
+        cout << get<0>(*segIt) << " SEGMENT" << endl << endl;
+
+        size_t disp = 0;
+        cout << std::setfill('0') << std::uppercase;
+        
+        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
+        {
+            cout << std::hex << std::setw(4) << disp << std::dec << "  ";
+            
+            auto computeRes = (*it)->compute();
+            string sentenceByteCodeStr = hexStringFromSentenceBytePresentation(computeRes);
+            for (size_t i = 0; i < sentenceByteCodeStr.size(); ++i)
+            {
+                cout << sentenceByteCodeStr[i];
+                if (((i % 29) == 0) && (i != 0))
+                    cout << endl << "      ";
+            }
+            printSpace(32 - sentenceByteCodeStr.size() % 30);
+            
+            auto sentencePresent = (*it)->present();
+            cout << get<0>(sentencePresent);
+            printSpace(10 - get<0>(sentencePresent).size());
+            for (auto jt = get<1>(sentencePresent).begin(); jt != get<1>(sentencePresent).end(); ++jt)
+            {
+                if (jt != get<1>(sentencePresent).begin())
+                    cout << ',';
+                cout << *jt;
+            }
+
+            cout << endl;
+
+            disp += getInstructionBytePresentSize(computeRes);
+        }
+
+        cout << std::hex << std::setw(4) << disp << std::dec << "  " << endl;
+
+        cout << std::setfill(' ');
+
+        cout << endl << get<0>(*segIt) << " ENDS" << endl << endl;;
+    }
 }

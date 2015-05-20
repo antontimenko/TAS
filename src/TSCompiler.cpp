@@ -10,7 +10,7 @@
 #include "TSSentence.h"
 #include <fstream>
 
-const TSCompiler::Arch TSCompiler::defaultArch = Arch::X86_32;
+const TSCompiler::Arch TSCompiler::arch = Arch::X86_32;
 
 TSCompiler::TSCompiler()
 {}
@@ -34,7 +34,7 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             auto phase5 = splitPseudoSentences(phase4);
             auto phase6 = constructRawSentences(get<0>(phase5));
             auto phase7 = constructSentences(phase6, get<1>(phase5));
-            printSentenceTable(phase7);
+            printListing(phase7, get<1>(phase5));
         }
         catch (TSCompileError &e)
         {

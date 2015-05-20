@@ -11,7 +11,7 @@
 class TSSentence
 {
 public:
-    virtual vector<uchar> compute() const = 0;
+    virtual vector<vector<uchar>> compute() const = 0;
     virtual tuple<string, vector<string>> present() const = 0;
     
     TSSentence(TSCodePosition pos) :
@@ -52,7 +52,7 @@ public:
         operandContainerVector(operandContainerVector)
     {}
 
-    virtual vector<uchar> compute() const override;
+    virtual vector<vector<uchar>> compute() const override;
     virtual tuple<string, vector<string>> present() const override;
 
     vector<Prefix> prefixVector;
@@ -73,7 +73,7 @@ public:
         operandContainerVector(operandContainerVector)
     {}
 
-    virtual vector<uchar> compute() const override;
+    virtual vector<vector<uchar>> compute() const override;
     virtual tuple<string, vector<string>> present() const override;
 
     DataIdentifier dataIdentifier;

@@ -45,14 +45,19 @@ TSInstruction::Definition findMostSuitableDefinition(const TSInstructionSentence
     auto getFullSuitableRank = [](const vector<TSInstructionSentence::OperandContainer> &operandContainerVector,
                                   const TSInstruction::Definition definition) -> size_t {
         auto getSuitableRank = [](const TSOperandMask::Mask &baseMask, const TSOperandMask::Mask &mask) -> size_t {
-            return (baseMask ^ mask).count();
+            size_t rank = (baseMask ^ mask).count();
+            
+            if (mask.match(IMM))
+                rank += ((baseMask ^ mask) & S_ANY).count();
+
+            return rank;
         };
 
         size_t fullSuitableRank = 0;
         
         for (size_t i = 0; i < operandContainerVector.size(); ++i)
             fullSuitableRank += getSuitableRank(definition.operandFullMasks[i].mask, get<0>(operandContainerVector[i]).mask);
-
+        
         return fullSuitableRank;
     };
 
@@ -71,6 +76,7 @@ TSInstruction::Definition findMostSuitableDefinition(const TSInstructionSentence
     TSInstruction::Definition mostSuitableDefinition = suitableDefinitions[0];
 
     const vector<TSInstructionSentence::OperandContainer> &operandContainerVector = instructionSentence.operandContainerVector;
+    
     for (size_t i = 1; i < suitableDefinitions.size(); ++i)
     {
         if (getFullSuitableRank(operandContainerVector, suitableDefinitions[i]) < getFullSuitableRank(operandContainerVector, mostSuitableDefinition))
@@ -80,7 +86,7 @@ TSInstruction::Definition findMostSuitableDefinition(const TSInstructionSentence
     return mostSuitableDefinition;
 }
 
-vector<uchar> TSInstructionSentence::compute() const
+vector<vector<uchar>> TSInstructionSentence::compute() const
 {
     TSInstruction::Definition definition = findMostSuitableDefinition(*this, findSuitableDefinitions(*this));
 
@@ -188,9 +194,9 @@ tuple<string, vector<string>> TSInstructionSentence::present() const
     return make_tuple(instructionStr, operandStrVector);
 }
 
-vector<uchar> TSDataSentence::compute() const
+vector<vector<uchar>> TSDataSentence::compute() const
 {
-    vector<uchar> res;
+    vector<vector<uchar>> res;
 
     TSInteger::Size intSize;
     switch (dataIdentifier)
@@ -209,7 +215,7 @@ vector<uchar> TSDataSentence::compute() const
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
     {
         vector<uchar> opRes = get<0>(*it).getCharArrayUnsigned(intSize);
-        res.insert(res.end(), opRes.begin(), opRes.end());
+        res.push_back(opRes);
     }
 
     return res;
@@ -415,7 +421,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                         instructionOperandSizeChecker(*it);
                     }
 
-                    dispVector[i] = instructionSentence.compute().size();
+                    dispVector[i] = getInstructionBytePresentSize(instructionSentence.compute());
                 }
                 else
                 {
@@ -474,7 +480,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                         bool sizeSuites;
                         if (!findSuitableDefinitions(innerInstructionSentence).empty())
                         {
-                            innerDispVector[i] = innerInstructionSentence.compute().size();
+                            innerDispVector[i] = getInstructionBytePresentSize(innerInstructionSentence.compute());
 
                             for (auto it = labelDependVector.begin(); it != labelDependVector.end(); ++it)
                             {

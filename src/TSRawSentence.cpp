@@ -388,7 +388,7 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
         if (!opMask.matchAny(MEM_MODE_ANY))
         {
             //TODO: Implement check by TSInteger size
-            switch (TSCompiler::defaultArch)
+            switch (TSCompiler::arch)
             {
             case TSCompiler::Arch::X86_16:
                 opMask |= MEM_16;

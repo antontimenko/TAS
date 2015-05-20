@@ -63,11 +63,11 @@ class Definition
 public:
     typedef TSInstruction::Instruction Instruction;
 
-    inline Definition(vector<TSInteger> opcode,
-                      TSInteger opcodeAdd,
+    inline Definition(vector<uchar> opcode,
+                      uchar opcodeAdd,
                       Instruction inst,
                       vector<OperandFullMask> operandFullMasks,
-                      function<vector<uchar>(Definition, TSInstructionSentence)> computeFunc) :
+                      function<vector<vector<uchar>>(Definition, TSInstructionSentence)> computeFunc) :
         opcode(opcode),
         opcodeAdd(opcodeAdd),
         instruction(inst),
@@ -75,25 +75,27 @@ public:
         computeFunc(computeFunc)
     {}
 
-    inline Definition(vector<TSInteger> opcode,
+    inline Definition(vector<uchar> opcode,
                       Instruction inst,
                       vector<OperandFullMask> operandFullMasks,
-                      function<vector<uchar>(Definition, TSInstructionSentence)> computeFunc) :
+                      function<vector<vector<uchar>>(Definition, TSInstructionSentence)> computeFunc) :
         opcode(opcode),
         instruction(inst),
         operandFullMasks(operandFullMasks),
         computeFunc(computeFunc)
     {}
 
-    vector<TSInteger> opcode;
-    optional<TSInteger> opcodeAdd;
+    vector<uchar> opcode;
+    optional<uchar> opcodeAdd;
     Instruction instruction;
     vector<OperandFullMask> operandFullMasks;
-    function<vector<uchar>(Definition, TSInstructionSentence)> computeFunc;
+    function<vector<vector<uchar>>(Definition, TSInstructionSentence)> computeFunc;
 };
 
 extern const vector<Definition> instructionDefinitionVector;
 
 }
+
+size_t getInstructionBytePresentSize(const vector<vector<uchar>> &instructionBytePresent);
 
 #endif
