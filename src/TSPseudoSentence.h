@@ -15,14 +15,14 @@ struct TSPseudoSentence
 
 typedef tuple<string, vector<TSPseudoSentence>> TSPseudoSentencesSegmentContainer;
 
-enum class TSLabelType
+struct TSLabel
 {
-    LABEL,
-    DATA
+    optional<TSToken::DataIdentifier> dataIdentifier;
+    size_t ptr;
+    string segName;
 };
 
-typedef tuple<TSLabelType, TSToken::DataIdentifier, size_t, string> TSLabelParamType;
-typedef tuple<vector<TSPseudoSentencesSegmentContainer>, map<string, TSLabelParamType>> TSPseudoSentenceSplitType;
+typedef tuple<vector<TSPseudoSentencesSegmentContainer>, map<string, TSLabel>> TSPseudoSentenceSplitType;
 
 TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSegmentContainer> &segmentTokenContainerVector);
 

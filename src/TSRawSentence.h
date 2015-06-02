@@ -56,7 +56,7 @@ private:
 
     friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence);
     friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer,
-                                                                  const map<string, TSLabelParamType> &labelMap);
+                                                                  const map<string, TSLabel> &labelMap);
 };
 
 class TSRawDataSentence : public TSRawSentence
@@ -74,7 +74,7 @@ private:
 
     friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence);
     friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer,
-                                                                  const map<string, TSLabelParamType> &labelMap);
+                                                                  const map<string, TSLabel> &labelMap);
 };
 
 typedef tuple<string, vector<shared_ptr<TSRawSentence>>> TSRawSentencesSegmentContainer;

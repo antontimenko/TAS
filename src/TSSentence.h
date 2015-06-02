@@ -86,6 +86,6 @@ class TSRawSentence;
 typedef tuple<string, vector<shared_ptr<TSRawSentence>>> TSRawSentencesSegmentContainer;
 
 vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector,
-                                                       const map<string, TSLabelParamType> &labelMap);
+                                                       const map<string, TSLabel> &labelMap);
 
 #endif

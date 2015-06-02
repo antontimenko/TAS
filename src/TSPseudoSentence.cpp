@@ -93,7 +93,7 @@ TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSeg
     };
 
     vector<TSPseudoSentencesSegmentContainer> segmentPseudoSentenceVector;
-    map<string, TSLabelParamType> labelMap;
+    map<string, TSLabel> labelMap;
 
     for (auto segIt = segmentTokenContainerVector.begin(); segIt != segmentTokenContainerVector.end(); ++segIt)
     {
@@ -115,10 +115,9 @@ TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSeg
                     if (labelMap.count((it - 1)->token.value<string>()))
                         throw TSCompileError("duplicate label", (it - 1)->pos);
 
-                    labelMap[(it - 1)->token.value<string>()] = TSLabelParamType(TSLabelType::LABEL,
-                                                                                 TSToken::DataIdentifier(),
-                                                                                 pseudoSentenceVector.size(),
-                                                                                 get<0>(*segIt));
+                    labelMap[(it - 1)->token.value<string>()] = {nullopt,
+                                                                 pseudoSentenceVector.size(),
+                                                                 get<0>(*segIt)};
                     
                     ++it;
                 }
@@ -127,10 +126,9 @@ TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSeg
                     if (labelMap.count((it - 1)->token.value<string>()))
                         throw TSCompileError("duplicate label", (it - 1)->pos);
 
-                    labelMap[(it - 1)->token.value<string>()] = TSLabelParamType(TSLabelType::DATA,
-                                                                                 it->token.value<TSToken::DataIdentifier>(),
-                                                                                 pseudoSentenceVector.size(),
-                                                                                 get<0>(*segIt));
+                    labelMap[(it - 1)->token.value<string>()] = {it->token.value<TSToken::DataIdentifier>(),
+                                                                 pseudoSentenceVector.size(),
+                                                                 get<0>(*segIt)};
                 }
                 else
                     throw TSCompileError("must be colon or size identifier", (it - 1)->pos);
