@@ -12,7 +12,7 @@
 struct TSRawNumber
 {
     TSInteger num;
-    optional<string> labelStr;
+    optional<TSLabel> label;
 };
 
 class TSSentenceSize;
@@ -20,7 +20,7 @@ class TSSentenceSize;
 class TSRawSentence
 {
 public:
-    virtual tuple<string, vector<string>> present() const = 0;
+    virtual tuple<string, vector<string>> present(const map<string, TSLabel> &labelMap) const = 0;
     
     inline TSRawSentence(TSCodePosition pos) :
         _pos(pos)
@@ -39,7 +39,7 @@ public:
     class Operand
     {
     public:
-        string present() const;
+        string present(const map<string, TSLabel> &labelMap) const;
         TSOperandMask::Mask mask;
         TSRawNumber rawNum;
     };
@@ -47,16 +47,15 @@ public:
     typedef TSInstruction::Instruction Instruction;
     typedef tuple<Operand, TSCodePosition> OperandContainer;
 
-    TSRawInstructionSentence(const TSPseudoSentence &pseudoSentence);
-    virtual tuple<string, vector<string>> present() const override;
+    TSRawInstructionSentence(const TSPseudoSentence &pseudoSentence, const map<string, TSLabel> &labelMap);
+    virtual tuple<string, vector<string>> present(const map<string, TSLabel> &labelMap) const override;
 private:
     vector<Prefix> prefixVector;
     Instruction instruction;
     vector<OperandContainer> operandContainerVector;
 
     friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence);
-    friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer,
-                                                                  const map<string, TSLabel> &labelMap);
+    friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer);
 };
 
 class TSRawDataSentence : public TSRawSentence
@@ -66,19 +65,19 @@ public:
     typedef tuple<Operand, TSCodePosition> OperandContainer;
     typedef TSInstruction::DataIdentifier DataIdentifier;
 
-    TSRawDataSentence(const TSPseudoSentence &pseudoSentence);
-    virtual tuple<string, vector<string>> present() const override;
+    TSRawDataSentence(const TSPseudoSentence &pseudoSentence, const map<string, TSLabel> &labelMap);
+    virtual tuple<string, vector<string>> present(const map<string, TSLabel> &labelMap) const override;
 private:
     DataIdentifier dataIdentifier;
     vector<OperandContainer> operandContainerVector;
 
     friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence);
-    friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer,
-                                                                  const map<string, TSLabel> &labelMap);
+    friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer);
 };
 
 typedef tuple<string, vector<shared_ptr<TSRawSentence>>> TSRawSentencesSegmentContainer;
 
-vector<TSRawSentencesSegmentContainer> constructRawSentences(const vector<TSPseudoSentencesSegmentContainer> &pseudoSentencesSegmentContainerVector);
+vector<TSRawSentencesSegmentContainer> constructRawSentences(const vector<TSPseudoSentencesSegmentContainer> &pseudoSentencesSegmentContainerVector,
+                                                             const map<string, TSLabel> &labelMap);
 
 #endif

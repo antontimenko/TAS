@@ -415,14 +415,14 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
     printTable("Pseudo Sentence Table", strTableVectors);
 }
 
-void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector)
+void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap)
 {
     size_t maxOpsAmmount = 0;
     for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt)
     {
         for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
         {
-            auto present = (*it)->present();
+            auto present = (*it)->present(labelMap);
             const vector<string> &operandStrVector = get<1>(present);
 
             if (operandStrVector.size() > maxOpsAmmount)
@@ -446,7 +446,7 @@ void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSent
     {
         for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
         {
-            auto present = (*it)->present();
+            auto present = (*it)->present(labelMap);
             const vector<string> &operandStrVector = get<1>(present);
 
             strIndexVector.push_back(std::to_string(it - get<1>(*segIt).begin()));

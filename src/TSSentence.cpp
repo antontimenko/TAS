@@ -269,8 +269,7 @@ shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence
     }
 }
 
-vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector,
-                                                       const map<string, TSLabel> &labelMap)
+vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector)
 {
     auto instructionOperandImplicitSizeSetter = [](TSInstructionSentence::Operand &operand) {
         if (operand.mask.match(IMM) && (!operand.mask.matchAny(S_ANY)))
@@ -371,7 +370,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                 vector<TSRawInstructionSentence::OperandContainer *> rawOperandContainerDependVector;
                 for (auto it = rawOperandContainerVector.begin(); it != rawOperandContainerVector.end(); ++it)
                 {
-                    if (get<0>(*it).rawNum.labelStr)
+                    if (get<0>(*it).rawNum.label)
                         rawOperandContainerDependVector.push_back(&*it);
                 }
 
@@ -379,20 +378,16 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                 {
                     TSRawInstructionSentence::Operand &operand = get<0>(**it);
 
-                    auto labelPairIt = labelMap.find(*operand.rawNum.labelStr);
-                    if (labelPairIt == labelMap.end())
-                        throw TSCompileError("undefined label '" + *operand.rawNum.labelStr + "'", get<1>(**it));
-
                     auto curLabelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                       dispsSegmentContainerVector.end(),
-                                                      DispsSegmentFinder(labelPairIt->second.segName));
+                                                      DispsSegmentFinder(operand.rawNum.label->segName));
 
-                    if ((labelPairIt->second.ptr == 0) ||
-                        (curLabelSegIt->dispVector[labelPairIt->second.ptr - 1]))
+                    if ((operand.rawNum.label->ptr == 0) ||
+                        (curLabelSegIt->dispVector[operand.rawNum.label->ptr - 1]))
                     {
                         operand.rawNum.num += computeDisp(curLabelSegIt->dispVector.begin(),
-                                                          curLabelSegIt->dispVector.begin() + labelPairIt->second.ptr);
-                        operand.rawNum.labelStr = nullopt;
+                                                          curLabelSegIt->dispVector.begin() + operand.rawNum.label->ptr);
+                        operand.rawNum.label = nullopt;
 
                         it = rawOperandContainerDependVector.erase(it);
                         continue;
@@ -400,7 +395,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
 
                     if (operand.mask.match(IMM) && operand.mask.matchAny(S_ANY))
                     {
-                        operand.rawNum.labelStr = nullopt;
+                        operand.rawNum.label = nullopt;
 
                         it = rawOperandContainerDependVector.erase(it);
                         continue;
@@ -425,11 +420,11 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                 }
                 else
                 {
-                    vector<string> labelDependVector;
+                    vector<TSLabel> labelDependVector;
                     for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end(); ++it)
                     {
-                        if (std::find(labelDependVector.begin(), labelDependVector.end(), *get<0>(**it).rawNum.labelStr) == labelDependVector.end())
-                            labelDependVector.push_back(*get<0>(**it).rawNum.labelStr);
+                        if (std::find(labelDependVector.begin(), labelDependVector.end(), *get<0>(**it).rawNum.label) == labelDependVector.end())
+                            labelDependVector.push_back(*get<0>(**it).rawNum.label);
                     }
 
                     vector<TSInteger::Size> operandSizeDependVector;
@@ -446,18 +441,18 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
 
                         for (auto it = innerRawOperandContainerVector.begin(); it != innerRawOperandContainerVector.end(); ++it)
                         {
-                            if (get<0>(*it).rawNum.labelStr)
+                            if (get<0>(*it).rawNum.label)
                             {
                                 auto currLabelDependIt = std::find(labelDependVector.begin(),
                                                                    labelDependVector.end(),
-                                                                   *get<0>(*it).rawNum.labelStr);
+                                                                   *get<0>(*it).rawNum.label);
                                 auto currSize = operandSizeDependVector[currLabelDependIt - labelDependVector.begin()];
 
                                 if (get<0>(*it).mask.match(MEM))
                                     get<0>(*it).rawNum.num = TSInteger::getMaxValSigned(currSize);
                                 else
                                     get<0>(*it).rawNum.num = TSInteger::getMaxValAny(currSize);
-                                get<0>(*it).rawNum.labelStr = nullopt;
+                                get<0>(*it).rawNum.label = nullopt;
                             }                            
                         }
 
@@ -486,7 +481,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                             {
                                 auto innerRawSegIt = std::find_if(rawSentencesSegmentContainerVector.begin(),
                                                                   rawSentencesSegmentContainerVector.end(),
-                                                                  RawSentencesSegmentFinder(labelMap.find(*it)->second.segName));
+                                                                  RawSentencesSegmentFinder(it->segName));
 
                                 innerDispsSegmentContainerVector = recursiveSizeComputer(innerDispsSegmentContainerVector,
                                                                                          innerRawSegIt);
@@ -497,9 +492,9 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                             {
                                 auto innerSegIt = std::find_if(innerDispsSegmentContainerVector.begin(),
                                                                innerDispsSegmentContainerVector.end(),
-                                                               DispsSegmentFinder(labelMap.find(*get<0>(**it).rawNum.labelStr)->second.segName));
+                                                               DispsSegmentFinder(get<0>(**it).rawNum.label->segName));
                                 TSInteger curInnerLabelDisp = computeDisp(innerSegIt->dispVector.begin(),
-                                                                          innerSegIt->dispVector.begin() + labelMap.find(*get<0>(**it).rawNum.labelStr)->second.ptr);
+                                                                          innerSegIt->dispVector.begin() + get<0>(**it).rawNum.label->ptr);
                                 TSInteger curInnerOpNum = get<0>(**it).rawNum.num + curInnerLabelDisp;
                                 TSInteger::Size curInnerOpSize = get<0>(**it).mask.match(MEM) ? *curInnerOpNum.sizeSigned() : curInnerOpNum.sizeAny();
                                 TSInteger::Size curInnerNeedOpSize = operandSizeDependVector[it - rawOperandContainerDependVector.begin()];
@@ -596,16 +591,16 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                     TSRawInstructionSentence::OperandContainer &rawOperandContainer = *kt;
                     TSRawInstructionSentence::Operand &rawOperand = get<0>(rawOperandContainer);
 
-                    if (rawOperand.rawNum.labelStr)
+                    if (rawOperand.rawNum.label)
                     {
                         auto labelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                        dispsSegmentContainerVector.end(),
-                                                       DispsSegmentFinder(labelMap.find(*rawOperand.rawNum.labelStr)->second.segName));
+                                                       DispsSegmentFinder(rawOperand.rawNum.label->segName));
                         TSInteger labelVal = computeDisp(labelSegIt->dispVector.begin(),
-                                                         labelSegIt->dispVector.begin() + labelMap.find(*rawOperand.rawNum.labelStr)->second.ptr);
+                                                         labelSegIt->dispVector.begin() + rawOperand.rawNum.label->ptr);
 
                         rawOperand.rawNum.num += labelVal;
-                        rawOperand.rawNum.labelStr = nullopt;
+                        rawOperand.rawNum.label = nullopt;
                     }
                 }
 
@@ -632,20 +627,17 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                     TSRawDataSentence::OperandContainer &rawOperandContainer = *kt;
                     TSRawDataSentence::Operand &rawOperand = get<0>(rawOperandContainer);
 
-                    if (rawOperand.labelStr)
+                    if (rawOperand.label)
                     {
                         auto labelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                        dispsSegmentContainerVector.end(),
-                                                       DispsSegmentFinder(labelMap.find(*rawOperand.labelStr)->second.segName));
-                        
-                        if (labelSegIt == dispsSegmentContainerVector.end())
-                            throw TSCompileError("undefined label '" + *rawOperand.labelStr + "'", get<1>(rawOperandContainer));
+                                                       DispsSegmentFinder(rawOperand.label->segName));
 
                         TSInteger labelVal = computeDisp(labelSegIt->dispVector.begin(),
-                                                         labelSegIt->dispVector.begin() + labelMap.find(*rawOperand.labelStr)->second.ptr);
+                                                         labelSegIt->dispVector.begin() + rawOperand.label->ptr);
                     
                         rawOperand.num += labelVal;
-                        rawOperand.labelStr = nullopt;
+                        rawOperand.label = nullopt;
                     }
                 }
 

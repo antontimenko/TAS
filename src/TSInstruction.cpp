@@ -69,6 +69,10 @@ const map<string, DataIdentifier> dataIdentifierMap = {
     {"DD", DataIdentifier::DD}
 };
 
+const set<Instruction> jumpInstructionsSet = {
+    Instruction::JNB
+};
+
 uchar composeBits(bitset<2> one, bitset<3> two, bitset<3> three)
 {
     uchar res = 0;

@@ -37,7 +37,7 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const
 void printEquTable(const map<string, TSInteger> &equMap);
 void printPseudoLabelTable(const map<string, TSLabel> &labelMap);
 void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &segmentPseudoSentenceVector);
-void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector);
+void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap);
 void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector);
 void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const map<string, TSLabel> &labelMap);
 
