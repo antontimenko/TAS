@@ -180,10 +180,12 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                 ++jt;
         }
 
+        bool thisOpPrefixOverride = false;
         if ((jt->token.type() == TSToken::Type::REGISTER) &&
             (jt->token.value<TSToken::Register>().match(SREG)))
         {
             prefixVector.push_back(getSegmentOverridePrefix(jt->token));
+            thisOpPrefixOverride = true;
 
             jt += 2;
         }
@@ -194,7 +196,7 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
         if ((firstEndIt == tokenContainerVector.end()) &&
             isPureMath(jt, firstEndIt))
         {
-            if (!prefixVector.empty())
+            if (thisOpPrefixOverride)
                 throw TSCompileError("constant cannot have segment override", operandPos);
 
             TSInteger constant = mathExpressionComputer(convertToMathOperationVector({jt, firstEndIt}));
