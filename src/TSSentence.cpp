@@ -166,7 +166,7 @@ string TSInstructionSentence::Operand::present() const
 
         return memStr;
     }
-    else
+    else if (mask.match(IMM))
     {
         string immStr;
         
@@ -181,7 +181,20 @@ string TSInstructionSentence::Operand::present() const
 
         return immStr;
     }
+    else
+    {
+        return num.str();
+    }
 }
+
+const map<TSInstructionSentence::Prefix, TSOperandMask::Mask> TSInstructionSentence::prefixToSegRegMap = {
+    {Prefix::ES, ES},
+    {Prefix::CS, CS},
+    {Prefix::SS, SS},
+    {Prefix::DS, DS},
+    {Prefix::FS, FS},
+    {Prefix::GS, GS}
+};
 
 tuple<string, vector<string>> TSInstructionSentence::present() const
 {
@@ -189,7 +202,21 @@ tuple<string, vector<string>> TSInstructionSentence::present() const
 
     vector<string> operandStrVector;
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
-        operandStrVector.push_back(get<0>(*it).present());
+    {
+        string operandStr = get<0>(*it).present();
+        
+        if (!prefixVector.empty())
+        {
+            if (get<0>(*it).mask.match(MEM))
+            {
+                Mask segRegPrefix = prefixToSegRegMap.find(prefixVector[0])->second;
+                string segRegStr = findByValue(TSOperandMask::registerMap, segRegPrefix)->first;
+                operandStr = segRegStr + ':' + operandStr;
+            }
+        }
+
+        operandStrVector.push_back(operandStr);
+    }
 
     return make_tuple(instructionStr, operandStrVector);
 }

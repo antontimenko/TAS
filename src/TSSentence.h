@@ -58,6 +58,8 @@ public:
     vector<Prefix> prefixVector;
     Instruction instruction;
     vector<OperandContainer> operandContainerVector;
+
+    static const map<Prefix, TSOperandMask::Mask> prefixToSegRegMap;
 };
 
 class TSDataSentence : public TSSentence
