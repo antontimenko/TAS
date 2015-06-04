@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <bitset>
+#include <set>
 #include <experimental/optional>
 #include <utility>
 #include <stdint.h>
@@ -27,6 +28,7 @@ using std::make_tuple;
 using std::function;
 using std::shared_ptr;
 using std::bitset;
+using std::set;
 using std::experimental::optional;
 using std::experimental::nullopt;
 

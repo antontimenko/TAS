@@ -32,8 +32,8 @@ void TSCompiler::compile(const string &sourceFilePath, const string &resultFileP
             auto phase3 = constructTokenContainerVector(phase2);
             auto phase4 = preprocess(phase3);
             auto phase5 = splitPseudoSentences(phase4);
-            auto phase6 = constructRawSentences(get<0>(phase5));
-            auto phase7 = constructSentences(phase6, get<1>(phase5));
+            auto phase6 = constructRawSentences(get<0>(phase5), get<1>(phase5));
+            auto phase7 = constructSentences(phase6);
             printListing(phase7, get<1>(phase5));
         }
         catch (TSCompileError &e)

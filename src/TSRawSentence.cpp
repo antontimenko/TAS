@@ -5,7 +5,9 @@
 #include "TSMath.h"
 #include "TSException.h"
 #include "TSDiagnostics.h"
+#include "TSInstruction.h"
 #include <utility>
+#include <algorithm>
 
 using namespace TSOperandMask;
 
@@ -97,7 +99,7 @@ auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainer
     return mathOperationVector;
 };
 
-TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseudoSentence) :
+TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseudoSentence, const map<string, TSLabel> &labelMap) :
     TSRawSentence(pseudoSentence.baseTokenContainer.pos),
     instruction(pseudoSentence.baseTokenContainer.token.value<TSToken::Instruction>())
 {
@@ -368,10 +370,14 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                 
                 if (lt->token.type() == TSToken::Type::USER_IDENTIFIER)
                 {
-                    if (disp.labelStr)
+                    if (disp.label)
                         throw TSCompileError("you can use only one pointer in addressing", lt->pos);
 
-                    disp.labelStr = lt->token.value<string>();
+                    auto labelIt = labelMap.find(lt->token.value<string>());
+                    if (labelIt == labelMap.end())
+                        throw TSCompileError("undefined label", lt->pos);
+
+                    disp.label = labelIt->second;
 
                     ++lt;
                 }
@@ -493,20 +499,32 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
 
         operandContainerVector.push_back(OperandContainer({opMask, disp}, operandPos));
     }
+
+    if (TSInstruction::jumpInstructionsSet.count(instruction) &&
+        (operandContainerVector.size() == 1))
+    {
+        Operand &op = get<0>(operandContainerVector[0]);
+
+        if (op.mask.match(IMM) ||
+            Mask(MEM_MODE_ANY).match(op.mask))
+        {
+            op.mask = REL;
+        }
+    }
 }
 
-tuple<string, vector<string>> TSRawInstructionSentence::present() const
+tuple<string, vector<string>> TSRawInstructionSentence::present(const map<string, TSLabel> &labelMap) const
 {
     string instructionStr = findByValue(TSInstruction::instructionMap, instruction)->first;
 
     vector<string> operandStrVector;
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
-        operandStrVector.push_back(get<0>(*it).present());
+        operandStrVector.push_back(get<0>(*it).present(labelMap));
 
     return make_tuple(instructionStr, operandStrVector);
 }
 
-string TSRawInstructionSentence::Operand::present() const
+string TSRawInstructionSentence::Operand::present(const map<string, TSLabel> &labelMap) const
 {
     if (mask.match(UREG) || mask.match(SREG))
         return findByValue(registerMap, mask)->first;
@@ -567,34 +585,41 @@ string TSRawInstructionSentence::Operand::present() const
             }
         }
 
+        optional<string> labelStr;
+        if (rawNum.label)
+        {
+            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), TSLabelFinder(*rawNum.label));
+            labelStr = labelIt->first;
+        }
+
         if (innerMemStr.empty())
         {
             if (rawNum.num == 0)
-                if (rawNum.labelStr)
-                    innerMemStr += *rawNum.labelStr;
+                if (labelStr)
+                    innerMemStr += *labelStr;
                 else
                     innerMemStr += "0";
             else
             {
                 innerMemStr += rawNum.num.str();
 
-                if (rawNum.labelStr)
-                    innerMemStr += "+" + *rawNum.labelStr;
+                if (labelStr)
+                    innerMemStr += "+" + *labelStr;
             }
         }
         else
         {
             if (rawNum.num == 0)
             {
-                if (rawNum.labelStr)
-                    innerMemStr += "+" + *rawNum.labelStr;
+                if (labelStr)
+                    innerMemStr += "+" + *labelStr;
             }
             else
             {
                 innerMemStr += rawNum.num.str(true);
 
-                if (rawNum.labelStr)
-                    innerMemStr += "+" + *rawNum.labelStr;
+                if (labelStr)
+                    innerMemStr += "+" + *labelStr;
             }
         }
 
@@ -602,7 +627,7 @@ string TSRawInstructionSentence::Operand::present() const
 
         return memStr;
     }
-    else
+    else if (mask.match(IMM))
     {
         string immStr;
         
@@ -617,9 +642,31 @@ string TSRawInstructionSentence::Operand::present() const
 
         return immStr;
     }
+    else
+    {
+        optional<string> labelStr;
+        if (rawNum.label)
+        {
+            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), TSLabelFinder(*rawNum.label));
+            labelStr = labelIt->first;
+        }
+
+        string relStr;
+
+        if (labelStr)
+        {
+            relStr += *labelStr;
+            if (rawNum.num != 0)
+                relStr += rawNum.num.str(true);
+        }
+        else
+            relStr += rawNum.num.str();
+
+        return relStr;
+    }
 }
 
-TSRawDataSentence::TSRawDataSentence(const TSPseudoSentence &pseudoSentence) :
+TSRawDataSentence::TSRawDataSentence(const TSPseudoSentence &pseudoSentence, const map<string, TSLabel> &labelMap) :
     TSRawSentence(pseudoSentence.baseTokenContainer.pos),
     dataIdentifier(pseudoSentence.baseTokenContainer.token.value<TSToken::DataIdentifier>())
 {
@@ -673,10 +720,14 @@ TSRawDataSentence::TSRawDataSentence(const TSPseudoSentence &pseudoSentence) :
                 
                 if (kt->token.type() == TSToken::Type::USER_IDENTIFIER)
                 {
-                    if (rawNum.labelStr)
+                    if (rawNum.label)
                         throw TSCompileError("you can use only one pointer in data", kt->pos);
 
-                    rawNum.labelStr = kt->token.value<string>();
+                    auto labelIt = labelMap.find(kt->token.value<string>());
+                    if (labelIt == labelMap.end())
+                        throw TSCompileError("undefined label", kt->pos);
+
+                    rawNum.label = labelIt->second;
 
                     ++kt;
                 }
@@ -694,7 +745,7 @@ TSRawDataSentence::TSRawDataSentence(const TSPseudoSentence &pseudoSentence) :
     }
 }
 
-tuple<string, vector<string>> TSRawDataSentence::present() const
+tuple<string, vector<string>> TSRawDataSentence::present(const map<string, TSLabel> &labelMap) const
 {
     string instructionStr = findByValue(TSInstruction::dataIdentifierMap, dataIdentifier)->first;
 
@@ -703,11 +754,18 @@ tuple<string, vector<string>> TSRawDataSentence::present() const
     {
         const TSRawNumber &rawNum = get<0>(*it);
         
+        optional<string> labelStr;
+        if (rawNum.label)
+        {
+            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), TSLabelFinder(*rawNum.label));
+            labelStr = labelIt->first;
+        }
+
         string str;
         if (rawNum.num == 0)
         {
-            if (rawNum.labelStr)
-                str += *rawNum.labelStr;
+            if (labelStr)
+                str += *labelStr;
             else
                 str += "0";
         }
@@ -715,8 +773,8 @@ tuple<string, vector<string>> TSRawDataSentence::present() const
         {
             str += rawNum.num.str();
 
-            if (rawNum.labelStr)
-                str += "+" + *rawNum.labelStr;
+            if (labelStr)
+                str += "+" + *labelStr;
         }
 
         operandStrVector.push_back(str);
@@ -725,7 +783,8 @@ tuple<string, vector<string>> TSRawDataSentence::present() const
     return make_tuple(instructionStr, operandStrVector);
 }
 
-vector<TSRawSentencesSegmentContainer> constructRawSentences(const vector<TSPseudoSentencesSegmentContainer> &pseudoSentencesSegmentContainerVector)
+vector<TSRawSentencesSegmentContainer> constructRawSentences(const vector<TSPseudoSentencesSegmentContainer> &pseudoSentencesSegmentContainerVector,
+                                                             const map<string, TSLabel> &labelMap)
 {
     vector<TSRawSentencesSegmentContainer> rawSentencesSegmentContainerVector;
 
@@ -736,9 +795,9 @@ vector<TSRawSentencesSegmentContainer> constructRawSentences(const vector<TSPseu
         for (auto jt = get<1>(*it).begin(); jt != get<1>(*it).end(); ++jt)
         {
             if (jt->baseTokenContainer.token.type() == TSToken::Type::INSTRUCTION)
-                rawSentenceVector.push_back(shared_ptr<TSRawSentence>(new TSRawInstructionSentence(*jt)));
+                rawSentenceVector.push_back(shared_ptr<TSRawSentence>(new TSRawInstructionSentence(*jt, labelMap)));
             else
-                rawSentenceVector.push_back(shared_ptr<TSRawSentence>(new TSRawDataSentence(*jt)));
+                rawSentenceVector.push_back(shared_ptr<TSRawSentence>(new TSRawDataSentence(*jt, labelMap)));
         }
 
         rawSentencesSegmentContainerVector.push_back(make_tuple(get<0>(*it), rawSentenceVector));

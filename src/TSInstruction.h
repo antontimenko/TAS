@@ -41,6 +41,7 @@ enum class DataIdentifier
 
 extern const map<string, Instruction> instructionMap;
 extern const map<string, DataIdentifier> dataIdentifierMap;
+extern const set<Instruction> jumpInstructionsSet;
 
 class OperandFullMask
 {

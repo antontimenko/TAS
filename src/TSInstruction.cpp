@@ -69,6 +69,10 @@ const map<string, DataIdentifier> dataIdentifierMap = {
     {"DD", DataIdentifier::DD}
 };
 
+const set<Instruction> jumpInstructionsSet = {
+    Instruction::JNB
+};
+
 uchar composeBits(bitset<2> one, bitset<3> two, bitset<3> three)
 {
     uchar res = 0;
@@ -524,11 +528,35 @@ vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, T
     return res;
 }
 
-vector<vector<uchar>> relativeJumpComputeFunc([[gnu::unused]] Definition definition, [[gnu::unused]] TSInstructionSentence instructionSentence)
+vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
 {
-    //TODO: Implement relative jump
+    vector<vector<uchar>> res;
 
-    return {{0}, {0}, {0}};
+    auto firstOpCont = instructionSentence.operandContainerVector[0];
+
+    auto &firstOp = get<0>(firstOpCont);
+
+    auto opcode = generateOpcode(definition.opcode);
+    res.insert(res.end(), opcode.begin(), opcode.end());
+
+    if (definition.operandFullMasks[0].mask.match(REL32))
+    {
+        if (TSCompiler::arch == TSCompiler::Arch::X86_32)
+            res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_32));
+        else
+            throw TSCompileError("too big relative path", get<1>(firstOpCont));
+    }
+    else if (definition.operandFullMasks[0].mask.match(REL16))
+    {
+        if (TSCompiler::arch == TSCompiler::Arch::X86_32)
+            res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_32));
+        else
+            res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_16));
+    }
+    else
+        res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_8));
+
+    return res;
 }
 
 const vector<Definition> instructionDefinitionVector = {
@@ -619,7 +647,7 @@ const vector<Definition> instructionDefinitionVector = {
     {{0x81}, 0, Instruction::ADD,   {{UREG32_ANY | MEM32_ANY}, {IMM32_FILL}},                         twoOpsOpcodeWithREGAndIMMComputeFunc},
     {{0x83}, 0, Instruction::ADD,   {{UREG16_ANY | MEM16_ANY | UREG32_ANY | MEM32_ANY}, {IMM8_FILL}}, twoOpsOpcodeWithREGAndIMMComputeFunc},
 
-    {{0x73},    Instruction::JNB,   {{MEM_MODE_ANY}},                                                 relativeJumpComputeFunc}
+    {{0x73},    Instruction::JNB,   {{REL8_FILL}},                                                    relativeJumpComputeFunc}
 };
 
 }

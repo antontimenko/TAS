@@ -269,18 +269,20 @@ shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence
     }
 }
 
-vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector,
-                                                       const map<string, TSLabelParamType> &labelMap)
+vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector)
 {
     auto instructionOperandImplicitSizeSetter = [](TSInstructionSentence::Operand &operand) {
         if (operand.mask.match(IMM) && (!operand.mask.matchAny(S_ANY)))
             operand.mask |= Mask::operandSizeFromIntegerSize(operand.num.sizeAny());
+        else if (operand.mask.match(REL) && (!operand.mask.matchAny(S_ANY)))
+            operand.mask |= Mask::operandSizeFromIntegerSize(*operand.num.sizeSigned());
     };
 
     auto instructionOperandSizeChecker = [](const TSInstructionSentence::OperandContainer &operandContainer) {
         const auto &operand = get<0>(operandContainer);
 
-        if (operand.mask.match(IMM) && (operand.num.sizeAny() > Mask::integerSizeFromOperandSize(operand.mask)))
+        if ((operand.mask.match(IMM) && (operand.num.sizeAny() > Mask::integerSizeFromOperandSize(operand.mask))) ||
+            (operand.mask.match(REL) && (*operand.num.sizeSigned() > Mask::integerSizeFromOperandSize(operand.mask))))
             throw TSCompileError("overflow (constant size too large)", get<1>(operandContainer));
     };
 
@@ -352,13 +354,13 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
     typedef function<vector<DispsSegmentContainer>(vector<DispsSegmentContainer>, vector<TSRawSentencesSegmentContainer>::const_iterator)> recursiveSizeComputerT;
     recursiveSizeComputerT recursiveSizeComputer = [&](vector<DispsSegmentContainer> dispsSegmentContainerVector,
                                                        vector<TSRawSentencesSegmentContainer>::const_iterator segIt) -> vector<DispsSegmentContainer> {
-        auto dispsSegmentContainerIt = std::find_if(dispsSegmentContainerVector.begin(),
-                                                    dispsSegmentContainerVector.end(),
-                                                    DispsSegmentFinder(get<0>(*segIt)));
-        auto &dispVector = dispsSegmentContainerIt->dispVector;
-
         for (size_t i = 0; i < get<1>(*segIt).size(); ++i)
         {
+            auto dispsSegmentContainerIt = std::find_if(dispsSegmentContainerVector.begin(),
+                                                        dispsSegmentContainerVector.end(),
+                                                        DispsSegmentFinder(get<0>(*segIt)));
+            auto &dispVector = dispsSegmentContainerIt->dispVector;
+
             if (dispVector[i])
                 continue;
 
@@ -368,179 +370,271 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                 TSRawInstructionSentence rawInstructionSentence = static_cast<TSRawInstructionSentence &>(*sentencePtr);
                 auto &rawOperandContainerVector = rawInstructionSentence.operandContainerVector;
 
-                vector<TSRawInstructionSentence::OperandContainer *> rawOperandContainerDependVector;
-                for (auto it = rawOperandContainerVector.begin(); it != rawOperandContainerVector.end(); ++it)
+                if (TSInstruction::jumpInstructionsSet.count(rawInstructionSentence.instruction) &&
+                    (rawOperandContainerVector.size() == 1) &&
+                    get<0>(rawOperandContainerVector[0]).mask.match(REL))
                 {
-                    if (get<0>(*it).rawNum.labelStr)
-                        rawOperandContainerDependVector.push_back(&*it);
-                }
+                    TSRawInstructionSentence::Operand jmpRawOperand = get<0>(rawOperandContainerVector[0]);
 
-                for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end();)
-                {
-                    TSRawInstructionSentence::Operand &operand = get<0>(**it);
-
-                    auto labelPairIt = labelMap.find(*operand.rawNum.labelStr);
-                    if (labelPairIt == labelMap.end())
-                        throw TSCompileError("undefined label '" + *operand.rawNum.labelStr + "'", get<1>(**it));
-
-                    auto curLabelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
-                                                      dispsSegmentContainerVector.end(),
-                                                      DispsSegmentFinder(get<3>(labelPairIt->second)));
-
-                    if ((get<2>(labelPairIt->second) == 0) ||
-                        (curLabelSegIt->dispVector[get<2>(labelPairIt->second) - 1]))
+                    if (!jmpRawOperand.rawNum.label)
                     {
-                        operand.rawNum.num += computeDisp(curLabelSegIt->dispVector.begin(),
-                                                          curLabelSegIt->dispVector.begin() + get<2>(labelPairIt->second));
-                        operand.rawNum.labelStr = nullopt;
+                        shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence);
+                        TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
+                        auto &operandContainerVector = instructionSentence.operandContainerVector;
+                        auto &jmpOperandContainer = operandContainerVector[0];
+                        auto &jmpOperand = get<0>(jmpOperandContainer);
+                        
+                        instructionOperandImplicitSizeSetter(jmpOperand);
 
-                        it = rawOperandContainerDependVector.erase(it);
-                        continue;
+                        dispVector[i] = getInstructionBytePresentSize(instructionSentence.compute());
                     }
-
-                    if (operand.mask.match(IMM) && operand.mask.matchAny(S_ANY))
+                    else
                     {
-                        operand.rawNum.labelStr = nullopt;
+                        TSLabel labelTo = *jmpRawOperand.rawNum.label;
+                        TSLabel labelFrom = {nullopt, i + 1, get<0>(*segIt)};
 
-                        it = rawOperandContainerDependVector.erase(it);
-                        continue;
+                        bool sizeComputed = false;
+                        for (TSInteger::Size innerRelSize = TSInteger::Size::S_8; innerRelSize != TSInteger::Size::S_64; innerRelSize = TSInteger::nextSize(innerRelSize))
+                        {
+                            TSRawInstructionSentence innerRawInstructionSentence = rawInstructionSentence;
+                            auto &innerRawOperandContainerVector = innerRawInstructionSentence.operandContainerVector;
+                            auto &innerRawJmpOperandContainer= innerRawOperandContainerVector[0];
+                            auto &innerRawJmpOperand = get<0>(innerRawJmpOperandContainer);
+
+                            innerRawJmpOperand.rawNum.num = TSInteger::getMaxValSigned(innerRelSize);
+                            innerRawJmpOperand.rawNum.label = nullopt;
+
+                            shared_ptr<TSSentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence);
+                            TSInstructionSentence &innerInstructionSentence = static_cast<TSInstructionSentence &>(*innerSentence);
+                            auto &innerOperandContainerVector = innerInstructionSentence.operandContainerVector;
+                            auto &innerJmpOperandContainer = innerOperandContainerVector[0];
+                            auto &innerJmpOperand = get<0>(innerJmpOperandContainer);
+
+                            instructionOperandImplicitSizeSetter(innerJmpOperand);
+
+                            auto innerDispsSegmentContainerVector = dispsSegmentContainerVector;
+                            auto innerDispsSegmentContainerIt = std::find_if(innerDispsSegmentContainerVector.begin(),
+                                                                             innerDispsSegmentContainerVector.end(),
+                                                                             DispsSegmentFinder(get<0>(*segIt)));
+                            auto &innerDispVector = innerDispsSegmentContainerIt->dispVector;
+
+                            if (!findSuitableDefinitions(innerInstructionSentence).empty())
+                            {
+                                innerDispVector[i] = getInstructionBytePresentSize(innerInstructionSentence.compute());
+
+                                auto innerRawSegIt = std::find_if(rawSentencesSegmentContainerVector.begin(),
+                                                                  rawSentencesSegmentContainerVector.end(),
+                                                                  RawSentencesSegmentFinder(get<0>(*segIt)));
+
+                                innerDispsSegmentContainerVector = recursiveSizeComputer(innerDispsSegmentContainerVector,
+                                                                                         innerRawSegIt);
+
+                                auto innerSegIt = std::find_if(innerDispsSegmentContainerVector.begin(),
+                                                               innerDispsSegmentContainerVector.end(),
+                                                               DispsSegmentFinder(get<0>(*segIt)));
+
+                                TSInteger curInnerLabelToDisp = computeDisp(innerSegIt->dispVector.begin(),
+                                                                            innerSegIt->dispVector.begin() + labelTo.ptr);
+                                TSInteger curInnerLabelFromDisp = computeDisp(innerSegIt->dispVector.begin(),
+                                                                              innerSegIt->dispVector.begin() + labelFrom.ptr);
+                                TSInteger curInnerRel = curInnerLabelToDisp + jmpRawOperand.rawNum.num - curInnerLabelFromDisp;
+
+                                TSInteger::Size curInnerOpSize = *curInnerRel.sizeSigned();
+
+                                TSInteger::Size curInnerNeedOpSize = innerRelSize;
+
+                                if (curInnerOpSize <= curInnerNeedOpSize)
+                                {
+                                    dispsSegmentContainerVector = innerDispsSegmentContainerVector;
+                                    sizeComputed = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!sizeComputed)
+                            throw TSCompileError("incorrect instruction or operand", rawInstructionSentence.pos());
                     }
-
-                    ++it;
-                }
-
-                if (rawOperandContainerDependVector.empty())
-                {
-                    shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence);
-                    TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
-                    auto &operandContainerVector = instructionSentence.operandContainerVector;
-                    
-                    for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
-                    {
-                        instructionOperandImplicitSizeSetter(get<0>(*it));
-                        instructionOperandSizeChecker(*it);
-                    }
-
-                    dispVector[i] = getInstructionBytePresentSize(instructionSentence.compute());
                 }
                 else
                 {
-                    vector<string> labelDependVector;
-                    for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end(); ++it)
+                    vector<TSRawInstructionSentence::OperandContainer *> rawOperandContainerDependVector;
+                    
+                    if (TSInstruction::jumpInstructionsSet.count(rawInstructionSentence.instruction) &&
+                        (rawOperandContainerVector.size() == 1) &&
+                        get<0>(rawOperandContainerVector[0]).mask.match(REL))
                     {
-                        if (std::find(labelDependVector.begin(), labelDependVector.end(), *get<0>(**it).rawNum.labelStr) == labelDependVector.end())
-                            labelDependVector.push_back(*get<0>(**it).rawNum.labelStr);
+                        TSRawInstructionSentence::Operand &operand = get<0>(rawOperandContainerVector[0]);
+
+                        if (operand.rawNum.label)
+                            rawOperandContainerDependVector.push_back(&rawOperandContainerVector[0]);
                     }
 
-                    vector<TSInteger::Size> operandSizeDependVector;
-                    for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end(); ++it)
+                    for (auto it = rawOperandContainerVector.begin(); it != rawOperandContainerVector.end(); ++it)
                     {
-                        operandSizeDependVector.push_back(TSInteger::Size::S_8);
+                        if (get<0>(*it).rawNum.label)
+                            rawOperandContainerDependVector.push_back(&*it);
                     }
 
-                    bool sizeComputed = false;
-                    while (true)
+                    for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end();)
                     {
-                        TSRawInstructionSentence innerRawInstructionSentence = rawInstructionSentence;
-                        auto &innerRawOperandContainerVector = innerRawInstructionSentence.operandContainerVector;
+                        TSRawInstructionSentence::Operand &operand = get<0>(**it);
 
-                        for (auto it = innerRawOperandContainerVector.begin(); it != innerRawOperandContainerVector.end(); ++it)
+                        auto curLabelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
+                                                          dispsSegmentContainerVector.end(),
+                                                          DispsSegmentFinder(operand.rawNum.label->segName));
+
+                        if ((operand.rawNum.label->ptr == 0) ||
+                            (curLabelSegIt->dispVector[operand.rawNum.label->ptr - 1]))
                         {
-                            if (get<0>(*it).rawNum.labelStr)
-                            {
-                                auto currLabelDependIt = std::find(labelDependVector.begin(),
-                                                                   labelDependVector.end(),
-                                                                   *get<0>(*it).rawNum.labelStr);
-                                auto currSize = operandSizeDependVector[currLabelDependIt - labelDependVector.begin()];
+                            operand.rawNum.num += computeDisp(curLabelSegIt->dispVector.begin(),
+                                                              curLabelSegIt->dispVector.begin() + operand.rawNum.label->ptr);
+                            operand.rawNum.label = nullopt;
 
-                                if (get<0>(*it).mask.match(MEM))
-                                    get<0>(*it).rawNum.num = TSInteger::getMaxValSigned(currSize);
-                                else
-                                    get<0>(*it).rawNum.num = TSInteger::getMaxValAny(currSize);
-                                get<0>(*it).rawNum.labelStr = nullopt;
-                            }                            
+                            it = rawOperandContainerDependVector.erase(it);
+                            continue;
                         }
 
-                        shared_ptr<TSSentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence);
-                        TSInstructionSentence &innerInstructionSentence = static_cast<TSInstructionSentence &>(*innerSentence);
-                        auto &innerOperandContainerVector = innerInstructionSentence.operandContainerVector;
+                        if (operand.mask.match(IMM) && operand.mask.matchAny(S_ANY))
+                        {
+                            operand.rawNum.label = nullopt;
 
-                        for (auto it = innerOperandContainerVector.begin(); it != innerOperandContainerVector.end(); ++it)
+                            it = rawOperandContainerDependVector.erase(it);
+                            continue;
+                        }
+
+                        ++it;
+                    }
+
+                    if (rawOperandContainerDependVector.empty())
+                    {
+                        shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence);
+                        TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
+                        auto &operandContainerVector = instructionSentence.operandContainerVector;
+                        
+                        for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
                         {
                             instructionOperandImplicitSizeSetter(get<0>(*it));
                             instructionOperandSizeChecker(*it);
                         }
 
-                        auto innerDispsSegmentContainerVector = dispsSegmentContainerVector;
-                        auto innerDispsSegmentContainerIt = std::find_if(innerDispsSegmentContainerVector.begin(),
-                                                                         innerDispsSegmentContainerVector.end(),
-                                                                         DispsSegmentFinder(get<0>(*segIt)));
-                        auto &innerDispVector = innerDispsSegmentContainerIt->dispVector;
-                        
-                        bool sizeSuites;
-                        if (!findSuitableDefinitions(innerInstructionSentence).empty())
+                        dispVector[i] = getInstructionBytePresentSize(instructionSentence.compute());
+                    }
+                    else
+                    {
+                        vector<TSLabel> labelDependVector;
+                        for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end(); ++it)
                         {
-                            innerDispVector[i] = getInstructionBytePresentSize(innerInstructionSentence.compute());
+                            if (std::find(labelDependVector.begin(), labelDependVector.end(), *get<0>(**it).rawNum.label) == labelDependVector.end())
+                                labelDependVector.push_back(*get<0>(**it).rawNum.label);
+                        }
 
-                            for (auto it = labelDependVector.begin(); it != labelDependVector.end(); ++it)
+                        vector<TSInteger::Size> operandSizeDependVector(rawOperandContainerDependVector.size(), TSInteger::Size::S_8);
+
+                        bool sizeComputed = false;
+                        while (true)
+                        {
+                            TSRawInstructionSentence innerRawInstructionSentence = rawInstructionSentence;
+                            auto &innerRawOperandContainerVector = innerRawInstructionSentence.operandContainerVector;
+
+                            for (auto it = innerRawOperandContainerVector.begin(); it != innerRawOperandContainerVector.end(); ++it)
                             {
-                                auto innerRawSegIt = std::find_if(rawSentencesSegmentContainerVector.begin(),
-                                                                  rawSentencesSegmentContainerVector.end(),
-                                                                  RawSentencesSegmentFinder(get<3>(labelMap.find(*it)->second)));
-
-                                innerDispsSegmentContainerVector = recursiveSizeComputer(innerDispsSegmentContainerVector,
-                                                                                         innerRawSegIt);
-                            }
-
-                            sizeSuites = true;
-                            for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end(); ++it)
-                            {
-                                auto innerSegIt = std::find_if(innerDispsSegmentContainerVector.begin(),
-                                                               innerDispsSegmentContainerVector.end(),
-                                                               DispsSegmentFinder(get<3>(labelMap.find(*get<0>(**it).rawNum.labelStr)->second)));
-                                TSInteger curInnerLabelDisp = computeDisp(innerSegIt->dispVector.begin(),
-                                                                          innerSegIt->dispVector.begin() + get<2>(labelMap.find(*get<0>(**it).rawNum.labelStr)->second));
-                                TSInteger curInnerOpNum = get<0>(**it).rawNum.num + curInnerLabelDisp;
-                                TSInteger::Size curInnerOpSize = get<0>(**it).mask.match(MEM) ? *curInnerOpNum.sizeSigned() : curInnerOpNum.sizeAny();
-                                TSInteger::Size curInnerNeedOpSize = operandSizeDependVector[it - rawOperandContainerDependVector.begin()];
-
-                                if (curInnerOpSize > curInnerNeedOpSize)
+                                if (get<0>(*it).rawNum.label)
                                 {
-                                    sizeSuites = false;
-                                    break;
-                                }                    
+                                    auto currLabelDependIt = std::find(labelDependVector.begin(),
+                                                                       labelDependVector.end(),
+                                                                       *get<0>(*it).rawNum.label);
+                                    auto currSize = operandSizeDependVector[currLabelDependIt - labelDependVector.begin()];
+
+                                    if (get<0>(*it).mask.match(MEM))
+                                        get<0>(*it).rawNum.num = TSInteger::getMaxValSigned(currSize);
+                                    else
+                                        get<0>(*it).rawNum.num = TSInteger::getMaxValAny(currSize);
+                                    get<0>(*it).rawNum.label = nullopt;
+                                }                            
                             }
-                        }
-                        else
-                            sizeSuites = false;
 
-                        if (sizeSuites)
-                        {
-                            dispsSegmentContainerVector = innerDispsSegmentContainerVector;
-                            sizeComputed = true;
-                            break;
-                        }
+                            shared_ptr<TSSentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence);
+                            TSInstructionSentence &innerInstructionSentence = static_cast<TSInstructionSentence &>(*innerSentence);
+                            auto &innerOperandContainerVector = innerInstructionSentence.operandContainerVector;
 
-                        if ((size_t)std::count(operandSizeDependVector.begin(), operandSizeDependVector.end(), TSInteger::Size::S_64) == operandSizeDependVector.size())
-                            break;
-
-                        auto it = operandSizeDependVector.end() - 1;
-                        do
-                        {
-                            if (*it != TSInteger::Size::S_64)
+                            for (auto it = innerOperandContainerVector.begin(); it != innerOperandContainerVector.end(); ++it)
                             {
-                                *it = TSInteger::nextSize(*it);
+                                instructionOperandImplicitSizeSetter(get<0>(*it));
+                                instructionOperandSizeChecker(*it);
+                            }
+
+                            auto innerDispsSegmentContainerVector = dispsSegmentContainerVector;
+                            auto innerDispsSegmentContainerIt = std::find_if(innerDispsSegmentContainerVector.begin(),
+                                                                             innerDispsSegmentContainerVector.end(),
+                                                                             DispsSegmentFinder(get<0>(*segIt)));
+                            auto &innerDispVector = innerDispsSegmentContainerIt->dispVector;
+                            
+                            bool sizeSuites = false;
+                            if (!findSuitableDefinitions(innerInstructionSentence).empty())
+                            {
+                                innerDispVector[i] = getInstructionBytePresentSize(innerInstructionSentence.compute());
+
+                                for (auto it = labelDependVector.begin(); it != labelDependVector.end(); ++it)
+                                {
+                                    auto innerRawSegIt = std::find_if(rawSentencesSegmentContainerVector.begin(),
+                                                                      rawSentencesSegmentContainerVector.end(),
+                                                                      RawSentencesSegmentFinder(it->segName));
+
+                                    innerDispsSegmentContainerVector = recursiveSizeComputer(innerDispsSegmentContainerVector,
+                                                                                             innerRawSegIt);
+                                }
+
+                                sizeSuites = true;
+                                for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end(); ++it)
+                                {
+                                    auto innerSegIt = std::find_if(innerDispsSegmentContainerVector.begin(),
+                                                                   innerDispsSegmentContainerVector.end(),
+                                                                   DispsSegmentFinder(get<0>(**it).rawNum.label->segName));
+                                    TSInteger curInnerLabelDisp = computeDisp(innerSegIt->dispVector.begin(),
+                                                                              innerSegIt->dispVector.begin() + get<0>(**it).rawNum.label->ptr);
+                                    TSInteger curInnerOpNum = get<0>(**it).rawNum.num + curInnerLabelDisp;
+
+                                    TSInteger::Size curInnerOpSize = get<0>(**it).mask.match(MEM) ? *curInnerOpNum.sizeSigned() : curInnerOpNum.sizeAny();
+
+                                    TSInteger::Size curInnerNeedOpSize = operandSizeDependVector[it - rawOperandContainerDependVector.begin()];
+
+                                    if (curInnerOpSize > curInnerNeedOpSize)
+                                    {
+                                        sizeSuites = false;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (sizeSuites)
+                            {
+                                dispsSegmentContainerVector = innerDispsSegmentContainerVector;
+                                sizeComputed = true;
                                 break;
                             }
-                            else
-                            {
-                                *it = TSInteger::Size::S_8;
-                            }
-                        } while (it != operandSizeDependVector.begin());
-                    }
 
-                    if (!sizeComputed)
-                        throw TSCompileError("incorrect instruction or operand", rawInstructionSentence.pos());
+                            if ((size_t)std::count(operandSizeDependVector.begin(), operandSizeDependVector.end(), TSInteger::Size::S_64) == operandSizeDependVector.size())
+                                break;
+
+                            auto it = operandSizeDependVector.end() - 1;
+                            do
+                            {
+                                if (*it != TSInteger::Size::S_64)
+                                {
+                                    *it = TSInteger::nextSize(*it);
+                                    break;
+                                }
+                                else
+                                {
+                                    *it = TSInteger::Size::S_8;
+                                }
+                            } while (it != operandSizeDependVector.begin());
+                        }
+
+                        if (!sizeComputed)
+                            throw TSCompileError("incorrect instruction or operand", rawInstructionSentence.pos());
+                    }
                 }
             }
             else
@@ -596,16 +690,22 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                     TSRawInstructionSentence::OperandContainer &rawOperandContainer = *kt;
                     TSRawInstructionSentence::Operand &rawOperand = get<0>(rawOperandContainer);
 
-                    if (rawOperand.rawNum.labelStr)
+                    if (rawOperand.rawNum.label)
                     {
                         auto labelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                        dispsSegmentContainerVector.end(),
-                                                       DispsSegmentFinder(get<3>(labelMap.find(*rawOperand.rawNum.labelStr)->second)));
+                                                       DispsSegmentFinder(rawOperand.rawNum.label->segName));
                         TSInteger labelVal = computeDisp(labelSegIt->dispVector.begin(),
-                                                         labelSegIt->dispVector.begin() + get<2>(labelMap.find(*rawOperand.rawNum.labelStr)->second));
+                                                         labelSegIt->dispVector.begin() + rawOperand.rawNum.label->ptr);
 
                         rawOperand.rawNum.num += labelVal;
-                        rawOperand.rawNum.labelStr = nullopt;
+                        rawOperand.rawNum.label = nullopt;
+
+                        if (rawOperand.mask.match(REL))
+                        {
+                            rawOperand.rawNum.num -= computeDisp(labelSegIt->dispVector.begin(),
+                                                                 labelSegIt->dispVector.begin() + (jt - rawSentenceVector.begin()) + 1);
+                        }
                     }
                 }
 
@@ -632,20 +732,17 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                     TSRawDataSentence::OperandContainer &rawOperandContainer = *kt;
                     TSRawDataSentence::Operand &rawOperand = get<0>(rawOperandContainer);
 
-                    if (rawOperand.labelStr)
+                    if (rawOperand.label)
                     {
                         auto labelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                        dispsSegmentContainerVector.end(),
-                                                       DispsSegmentFinder(get<3>(labelMap.find(*rawOperand.labelStr)->second)));
-                        
-                        if (labelSegIt == dispsSegmentContainerVector.end())
-                            throw TSCompileError("undefined label '" + *rawOperand.labelStr + "'", get<1>(rawOperandContainer));
+                                                       DispsSegmentFinder(rawOperand.label->segName));
 
                         TSInteger labelVal = computeDisp(labelSegIt->dispVector.begin(),
-                                                         labelSegIt->dispVector.begin() + get<2>(labelMap.find(*rawOperand.labelStr)->second));
+                                                         labelSegIt->dispVector.begin() + rawOperand.label->ptr);
                     
                         rawOperand.num += labelVal;
-                        rawOperand.labelStr = nullopt;
+                        rawOperand.label = nullopt;
                     }
                 }
 

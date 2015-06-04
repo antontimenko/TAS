@@ -15,14 +15,37 @@ struct TSPseudoSentence
 
 typedef tuple<string, vector<TSPseudoSentence>> TSPseudoSentencesSegmentContainer;
 
-enum class TSLabelType
+class TSLabel
 {
-    LABEL,
-    DATA
+public:
+    optional<TSToken::DataIdentifier> dataIdentifier;
+    size_t ptr;
+    string segName;
+
+    inline bool operator==(const TSLabel &label) const
+    {
+        return (dataIdentifier == label.dataIdentifier) &&
+               (ptr == label.ptr) &&
+               (segName == label.segName);
+    }
 };
 
-typedef tuple<TSLabelType, TSToken::DataIdentifier, size_t, string> TSLabelParamType;
-typedef tuple<vector<TSPseudoSentencesSegmentContainer>, map<string, TSLabelParamType>> TSPseudoSentenceSplitType;
+class TSLabelFinder
+{
+public:
+    inline TSLabelFinder(TSLabel label) :
+        label(label)
+    {}
+
+    const TSLabel label;
+
+    inline bool operator()(const pair<string, TSLabel> &labelPair) const
+    {
+        return label == labelPair.second;
+    }
+};
+
+typedef tuple<vector<TSPseudoSentencesSegmentContainer>, map<string, TSLabel>> TSPseudoSentenceSplitType;
 
 TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSegmentContainer> &segmentTokenContainerVector);
 

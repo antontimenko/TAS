@@ -344,7 +344,7 @@ void printEquTable(const map<string, TSInteger> &equMap)
     printTable("EQU Table", {strNameVector, strValueVector});
 }
 
-void printPseudoLabelTable(const map<string, TSLabelParamType> &labelMap)
+void printPseudoLabelTable(const map<string, TSLabel> &labelMap)
 {
     vector<string> strNameVector{"Name"};
     vector<string> strTypeVector{"Type"};
@@ -354,9 +354,9 @@ void printPseudoLabelTable(const map<string, TSLabelParamType> &labelMap)
     for (auto it = labelMap.begin(); it != labelMap.end(); ++it)
     {
         strNameVector.push_back(it->first);
-        strTypeVector.push_back(get<0>(it->second) == TSLabelType::LABEL ? "Label" : findByValue(TSToken::dataIdentifierMap, get<1>(it->second))->first);
-        strIndexVector.push_back(std::to_string(get<2>(it->second)));
-        strSegmentVector.push_back(get<3>(it->second));
+        strTypeVector.push_back(it->second.dataIdentifier ? findByValue(TSToken::dataIdentifierMap, *it->second.dataIdentifier)->first : "LABEL");
+        strIndexVector.push_back(std::to_string(it->second.ptr));
+        strSegmentVector.push_back(it->second.segName);
     }
 
     printTable("Pseudo Label Table", {strNameVector, strTypeVector, strIndexVector, strSegmentVector});
@@ -415,14 +415,14 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
     printTable("Pseudo Sentence Table", strTableVectors);
 }
 
-void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector)
+void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap)
 {
     size_t maxOpsAmmount = 0;
     for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt)
     {
         for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
         {
-            auto present = (*it)->present();
+            auto present = (*it)->present(labelMap);
             const vector<string> &operandStrVector = get<1>(present);
 
             if (operandStrVector.size() > maxOpsAmmount)
@@ -446,7 +446,7 @@ void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSent
     {
         for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
         {
-            auto present = (*it)->present();
+            auto present = (*it)->present(labelMap);
             const vector<string> &operandStrVector = get<1>(present);
 
             strIndexVector.push_back(std::to_string(it - get<1>(*segIt).begin()));
@@ -547,7 +547,7 @@ string hexStringFromSentenceBytePresentation(const vector<vector<uchar>> &senten
     return strStream.str();
 }
 
-void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const map<string, TSLabelParamType> &labelMap)
+void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const map<string, TSLabel> &labelMap)
 {
     for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
     {
