@@ -2,4 +2,4 @@
 build/
 dep/
 tas.sublime-workspace
-OWN.ASM
+OWN*.ASM
