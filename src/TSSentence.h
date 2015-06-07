@@ -40,6 +40,7 @@ public:
         string present() const;
         TSOperandMask::Mask mask;
         TSInteger num;
+        bool isLinkable;
     };
 
     typedef TSInstruction::Instruction Instruction;

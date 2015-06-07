@@ -54,7 +54,7 @@ private:
     Instruction instruction;
     vector<OperandContainer> operandContainerVector;
 
-    friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence);
+    friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence, vector<bool> linkVector);
     friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer);
 };
 
@@ -71,7 +71,7 @@ private:
     DataIdentifier dataIdentifier;
     vector<OperandContainer> operandContainerVector;
 
-    friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence);
+    friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence, vector<bool> linkVector);
     friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer);
 };
 

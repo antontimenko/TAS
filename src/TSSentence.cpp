@@ -259,7 +259,7 @@ tuple<string, vector<string>> TSDataSentence::present() const
     return make_tuple(instructionStr, operandStrVector);
 }
 
-shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence)
+shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence, vector<bool> linkVector = vector<bool>())
 {
     if (typeid(rawSentence) == typeid(TSRawInstructionSentence))
     {
@@ -269,8 +269,9 @@ shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence
         for (auto it = rawInstructionSentence.operandContainerVector.begin(); it != rawInstructionSentence.operandContainerVector.end(); ++it)
         {
             const TSRawInstructionSentence::Operand &rawOperand = get<0>(*it);
-
-            operandContainerVector.push_back(TSInstructionSentence::OperandContainer({rawOperand.mask, rawOperand.rawNum.num}, get<1>(*it)));
+            bool isLinkable = ((size_t)(it - rawInstructionSentence.operandContainerVector.begin()) < linkVector.size()) ? linkVector[it - rawInstructionSentence.operandContainerVector.begin()] : false;
+            
+            operandContainerVector.push_back(TSInstructionSentence::OperandContainer({rawOperand.mask, rawOperand.rawNum.num, isLinkable}, get<1>(*it)));
         }
 
         return shared_ptr<TSSentence>(new TSInstructionSentence(rawInstructionSentence.pos(),
@@ -378,6 +379,15 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
         return disp;
     };
 
+    auto getLinkVectorFromRawSentence = [](const TSRawInstructionSentence &rawInstructionSentence) -> vector<bool> {
+        vector<bool> res;
+
+        for (auto it = rawInstructionSentence.operandContainerVector.begin(); it != rawInstructionSentence.operandContainerVector.end(); ++it)
+            res.push_back((bool)get<0>(*it).rawNum.label);
+
+        return res;
+    };
+
     typedef function<vector<DispsSegmentContainer>(vector<DispsSegmentContainer>, vector<TSRawSentencesSegmentContainer>::const_iterator)> recursiveSizeComputerT;
     recursiveSizeComputerT recursiveSizeComputer = [&](vector<DispsSegmentContainer> dispsSegmentContainerVector,
                                                        vector<TSRawSentencesSegmentContainer>::const_iterator segIt) -> vector<DispsSegmentContainer> {
@@ -394,7 +404,8 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
             shared_ptr<TSRawSentence> sentencePtr = get<1>(*segIt)[i];
             if (typeid(*sentencePtr) == typeid(TSRawInstructionSentence))
             {
-                TSRawInstructionSentence rawInstructionSentence = static_cast<TSRawInstructionSentence &>(*sentencePtr);
+                TSRawInstructionSentence &sourceRawInstructionSentence = static_cast<TSRawInstructionSentence &>(*sentencePtr);
+                TSRawInstructionSentence rawInstructionSentence = sourceRawInstructionSentence;
                 auto &rawOperandContainerVector = rawInstructionSentence.operandContainerVector;
 
                 if (TSInstruction::jumpInstructionsSet.count(rawInstructionSentence.instruction) &&
@@ -535,7 +546,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
 
                     if (rawOperandContainerDependVector.empty())
                     {
-                        shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence);
+                        shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
                         TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
                         auto &operandContainerVector = instructionSentence.operandContainerVector;
                         
@@ -581,7 +592,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                                 }                            
                             }
 
-                            shared_ptr<TSSentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence);
+                            shared_ptr<TSSentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
                             TSInstructionSentence &innerInstructionSentence = static_cast<TSInstructionSentence &>(*innerSentence);
                             auto &innerOperandContainerVector = innerInstructionSentence.operandContainerVector;
 
@@ -709,7 +720,8 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
         {
             if (typeid(**jt) == typeid(TSRawInstructionSentence))
             {
-                TSRawInstructionSentence rawInstructionSentence = static_cast<const TSRawInstructionSentence &>(**jt);
+                const TSRawInstructionSentence &sourceRawInstructionSentence = static_cast<const TSRawInstructionSentence &>(**jt);
+                TSRawInstructionSentence rawInstructionSentence = sourceRawInstructionSentence;
                 auto &rawOperandContainerVector = rawInstructionSentence.operandContainerVector;
 
                 for (auto kt = rawOperandContainerVector.begin(); kt != rawOperandContainerVector.end(); ++kt)
@@ -736,7 +748,7 @@ vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentenc
                     }
                 }
 
-                shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence);
+                shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
 
                 TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
                 auto &operandContainerVector = instructionSentence.operandContainerVector;

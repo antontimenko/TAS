@@ -547,7 +547,7 @@ string hexStringFromSentenceBytePresentation(const vector<vector<uchar>> &senten
     return strStream.str();
 }
 
-void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const map<string, TSLabel> &labelMap)
+void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector)
 {
     for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
     {

@@ -115,6 +115,20 @@ bitset<2> getMOD(const TSInstructionSentence::OperandContainer &operandContainer
     if (!op.mask.match(MEM))
         return 0b11;
 
+    if (op.isLinkable)
+    {
+        if (op.mask.match(MEM_16))
+        {
+            if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_16))
+                return 0b10;
+        }
+        else
+        {
+            if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_32))
+                return 0b10;
+        }
+    }
+
     if (op.num == 0)
         return 0b00;
 
@@ -151,14 +165,24 @@ bitset<2> getScale(const TSInstructionSentence::Operand &op)
 
 TSInteger::Size getSuitableDispSize(const TSInstructionSentence::Operand &op)
 {
-    if (op.num.sizeSigned() <= TSInteger::Size::S_8)
-        return TSInteger::Size::S_8;
-    else
+    if (op.isLinkable)
     {
         if (op.mask.match(MEM_32))
             return TSInteger::Size::S_32;
         else
             return TSInteger::Size::S_16;
+    }
+    else
+    {
+        if (op.num.sizeSigned() <= TSInteger::Size::S_8)
+            return TSInteger::Size::S_8;
+        else
+        {
+            if (op.mask.match(MEM_32))
+                return TSInteger::Size::S_32;
+            else
+                return TSInteger::Size::S_16;
+        }
     }
 }
 
@@ -235,7 +259,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
     {
         if (op.mask.match(MEM_BASE))
         {
-            if (op.mask.match(MEM_16_BP) && (op.num == 0))
+            if (op.mask.match(MEM_16_BP) && (op.num == 0) && (!op.isLinkable))
             {
                 res.push_back({composeBits(0b01, reg, 0b110)});
                 res.push_back({0});
@@ -244,7 +268,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
             {
                 res.push_back({composeBits(getMOD(opCont), reg, getBitsetFromMask(op.mask))});
                 
-                if (op.num != 0)
+                if ((op.num != 0) || op.isLinkable)
                     res.push_back(op.num.getCharArraySigned(getSuitableDispSize(op)));
             }
         }
@@ -263,7 +287,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
 
             if (op.mask.match(MEM_BASE))
             {
-                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0))
+                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0) && (!op.isLinkable))
                 {
                     res.push_back({composeBits(0b01, reg, 0b100)});
                     res.push_back({composeBits(scale, index, 0b101)});
@@ -274,7 +298,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
                     res.push_back({composeBits(getMOD(opCont), reg, 0b100)});
                     res.push_back({composeBits(scale, index, getBitsetFromMask(op.mask))});
 
-                    if (op.num != 0)
+                    if ((op.num != 0) || op.isLinkable)
                         res.push_back(op.num.getCharArraySigned(getSuitableDispSize(op)));
                 }
             }
@@ -289,7 +313,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
         {
             if (op.mask.match(MEM_BASE))
             {
-                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0))
+                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0) && (!op.isLinkable))
                 {
                     res.push_back({composeBits(0b01, reg, 0b101)});
                     res.push_back({0});
@@ -299,14 +323,14 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
                     res.push_back({composeBits(getMOD(opCont), reg, 0b100)});
                     res.push_back({composeBits(0b00, 0b100, 0b100)});
 
-                    if (op.num != 0)
+                    if ((op.num != 0) || op.isLinkable)
                         res.push_back({op.num.getCharArraySigned(getSuitableDispSize(op))});
                 }
                 else
                 {
                     res.push_back({composeBits(getMOD(opCont), reg, getBitsetFromMask(op.mask))});
                     
-                    if (op.num != 0) 
+                    if ((op.num != 0) || op.isLinkable) 
                         res.push_back({op.num.getCharArraySigned(getSuitableDispSize(op))});
                 }
             }

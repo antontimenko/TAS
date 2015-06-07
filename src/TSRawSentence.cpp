@@ -513,6 +513,26 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
             op.mask = REL;
         }
     }
+
+    for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
+    {
+        Operand &op = get<0>(*it);
+        if (op.rawNum.label && op.mask.match(MEM) && (!op.mask.matchAny(S_ANY)) && op.rawNum.label->dataIdentifier)
+        {
+            switch (*op.rawNum.label->dataIdentifier)
+            {
+            case TSToken::DataIdentifier::DB:
+                op.mask |= S8;
+                break;
+            case TSToken::DataIdentifier::DW:
+                op.mask |= S16;
+                break;
+            case TSToken::DataIdentifier::DD:
+                op.mask |= S32;
+                break;
+            }
+        }
+    }
 }
 
 tuple<string, vector<string>> TSRawInstructionSentence::present(const map<string, TSLabel> &labelMap) const
