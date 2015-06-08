@@ -23,7 +23,7 @@ bool isCharNumberCompatible(char ch)
     return numberChars.find(ch) != string::npos;
 }
 
-bool isCharSingleCharacterLexemCompatible(char ch)
+bool isCharSingleCharacterLexemeCompatible(char ch)
 {
     return singleCharLexemChars.find(ch) != string::npos;
 }
@@ -87,7 +87,7 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
 
                     currentLexeme += currentChar;
                 }
-                else if (isCharSingleCharacterLexemCompatible(currentChar))
+                else if (isCharSingleCharacterLexemeCompatible(currentChar))
                 {
                     if (!currentLexeme.empty())
                     {

@@ -40,6 +40,7 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
 void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap);
 void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector);
 void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector);
+void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const TSPseudoSentenceSplitType &pseudoSentenceSplit);
 
 template<typename T, typename U>
 typename map<T, U>::const_iterator findByValue(const map<T, U> &source, U value)

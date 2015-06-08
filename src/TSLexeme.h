@@ -8,7 +8,7 @@ extern const char cCR;
 
 bool isCharIdentifierCompatible(char ch);
 bool isCharNumberCompatible(char ch);
-bool isCharSingleCharacterLexemCompatible(char ch);
+bool isCharSingleCharacterLexemeCompatible(char ch);
 bool isCharLexemeDistributorCompatible(char ch);
 bool isCharQuoteCompatible(char ch);
 

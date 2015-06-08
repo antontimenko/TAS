@@ -592,3 +592,90 @@ void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentCon
         cout << endl << get<0>(*segIt) << " ENDS" << endl << endl;;
     }
 }
+
+void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const TSPseudoSentenceSplitType &pseudoSentenceSplit)
+{
+    const vector<TSPseudoSentencesSegmentContainer> &pseudoSentencesSegmentContainerVector = get<0>(pseudoSentenceSplit);
+    const map<string, TSLabel> &labelMap = get<1>(pseudoSentenceSplit);
+    
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
+    {
+        const vector<TSPseudoSentence> &pseudoSentenceVector = get<1>(pseudoSentencesSegmentContainerVector[segIt - sentencesSegmentContainerVector.begin()]);
+
+        cout << get<0>(*segIt) << " SEGMENT" << endl << endl;
+
+        size_t disp = 0;
+        cout << std::setfill('0') << std::uppercase;
+        
+        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
+        {
+            for (auto jt = labelMap.begin(); jt != labelMap.end(); ++jt)
+            {
+                if ((get<0>(*segIt) == jt->second.segName) && ((size_t)(it - get<1>(*segIt).begin()) == jt->second.ptr))
+                {
+                    printSpace(6);
+                    cout << jt->first << ':' << endl;
+                    break;
+                }
+            }
+
+            const TSPseudoSentence &pseudoSentence = pseudoSentenceVector[it - get<1>(*segIt).begin()];
+
+            cout << std::hex << std::setw(4) << disp << std::dec << "  ";
+            
+            auto computeRes = (*it)->compute();
+            string sentenceByteCodeStr = hexStringFromSentenceBytePresentation(computeRes);
+            for (size_t i = 0; i < sentenceByteCodeStr.size(); ++i)
+            {
+                cout << sentenceByteCodeStr[i];
+                if (((i % 29) == 0) && (i != 0))
+                    cout << endl << "      ";
+            }
+            printSpace(32 - sentenceByteCodeStr.size() % 30);
+            
+            auto sentencePresent = (*it)->present();
+            cout << get<0>(sentencePresent);
+            printSpace(10 - get<0>(sentencePresent).size());
+
+            for (auto jt = pseudoSentence.operandsTokenContainerVector.begin(); jt != pseudoSentence.operandsTokenContainerVector.end(); ++jt)
+            {
+                bool isPreviousSingleChar = true;
+                for (auto kt = jt->begin(); kt != jt->end(); ++kt)
+                {
+                    string tokenStr = getTokenString(kt->token);
+                    bool isSingleChar = (tokenStr.size() == 1) && (isCharSingleCharacterLexemeCompatible(tokenStr[0]));
+
+                    if ((!isPreviousSingleChar) && (!isSingleChar))
+                        cout << ' ';
+
+                    cout << tokenStr;
+
+                    isPreviousSingleChar = isSingleChar;
+                }
+
+                if (jt != pseudoSentence.operandsTokenContainerVector.end() - 1)
+                    cout << ',';
+            }
+
+            cout << endl;
+
+            disp += getInstructionBytePresentSize(computeRes);
+        }
+
+        for (auto jt = labelMap.begin(); jt != labelMap.end(); ++jt)
+        {
+            if ((get<0>(*segIt) == jt->second.segName) && (get<1>(*segIt).size() == jt->second.ptr))
+            {
+                printSpace(6);
+                cout << jt->first << ':' << endl;
+                break;
+            }
+        }
+
+        cout << std::hex << std::setw(4) << disp << std::dec << "  " << endl;
+
+        cout << std::setfill(' ');
+
+        cout << endl << get<0>(*segIt) << " ENDS" << endl << endl;;
+    }
+}
