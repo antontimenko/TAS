@@ -9,8 +9,7 @@
 typedef long long TSInt;
 typedef unsigned long long TSUInt;
 
-class TSInteger
-{
+class TSInteger {
 public:
     constexpr TSInteger() :
         TSInteger((TSUInt)0)
@@ -42,39 +41,33 @@ public:
         TSInteger((TSUInt)val)
     {}
 
-    constexpr TSInteger &operator=(TSUInt val)
-    {
+    constexpr TSInteger &operator=(TSUInt val) {
         this->val = val;
         isSigned = false;
 
         return *this;
     }
 
-    constexpr TSInteger &operator=(TSInt val)
-    {
+    constexpr TSInteger &operator=(TSInt val) {
         this->val = val;
         isSigned = true;
 
         return *this;
     }
 
-    constexpr TSInteger &operator=(int val)
-    {
+    constexpr TSInteger &operator=(int val) {
         return operator=((TSInt)val);
     }
 
-    constexpr TSInteger &operator=(long val)
-    {
+    constexpr TSInteger &operator=(long val) {
         return operator=((TSInt)val);
     }
 
-    constexpr TSInteger &operator=(unsigned int val)
-    {
+    constexpr TSInteger &operator=(unsigned int val) {
         return operator=((TSUInt)val);
     }
 
-    constexpr TSInteger &operator=(unsigned long val)
-    {
+    constexpr TSInteger &operator=(unsigned long val) {
         return operator=((TSUInt)val);
     }
 
@@ -91,34 +84,29 @@ public:
     TSInteger operator*(const TSInteger &num) const;
     TSInteger operator/(const TSInteger &num) const;
     
-    inline TSInteger &operator+=(const TSInteger &num)
-    {
+    inline TSInteger &operator+=(const TSInteger &num) {
         *this = *this + num;
         return *this;
     }
     
-    inline TSInteger &operator-=(const TSInteger &num)
-    {
+    inline TSInteger &operator-=(const TSInteger &num) {
         *this = *this - num;
         return *this;
     }
     
-    inline TSInteger &operator*=(const TSInteger &num)
-    {
+    inline TSInteger &operator*=(const TSInteger &num) {
         *this = *this * num;
         return *this;
     }
     
-    inline TSInteger &operator/=(const TSInteger &num)
-    {
+    inline TSInteger &operator/=(const TSInteger &num) {
         *this = *this / num;
         return *this;
     }
     
     std::string str(bool includeSign = false) const;
 
-    enum class Size
-    {
+    enum class Size {
         S_8,
         S_16,
         S_32,
@@ -141,8 +129,7 @@ private:
     bool isSigned;
 };
 
-constexpr TSInteger operator""_I(TSUInt val)
-{
+constexpr TSInteger operator""_I(TSUInt val) {
     return val;
 }
 

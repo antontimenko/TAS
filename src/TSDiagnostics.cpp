@@ -21,16 +21,15 @@ const map<TSToken::Type, string> tokenTypeDescriptionMap = {
     {TSToken::Type::CONDITION, "Condition"},
     {TSToken::Type::SIZE_OPERATOR, "Size Operator"},
     {TSToken::Type::EQU_DIRECTIVE, "EQU Directive"},
-    {TSToken::Type::END_DIRECTIVE, "END Directive"}
+    {TSToken::Type::END_DIRECTIVE, "END Directive"},
+    {TSToken::Type::ASSUME_DIRECTIVE, "ASSUME Directive"}
 };
 
-void printError(string text)
-{
+void printError(string text) {
     cout << TSColor::BWhite << text << TSColor::Reset << endl;
 }
 
-void printCompileError(string text, const string &sourceFileContents, TSCodePosition pos)
-{
+void printCompileError(string text, const string &sourceFileContents, TSCodePosition pos) {
     cout << TSColor::BWhite << flush;
 
     cout << TSColor::BRed << "Compile Error" << TSColor::BWhite << " ("
@@ -43,8 +42,7 @@ void printCompileError(string text, const string &sourceFileContents, TSCodePosi
 
     i = 0;
     size_t currentRow = 1;
-    while (currentRow < pos.row)
-    {
+    while (currentRow < pos.row) {
         if ((sourceFileContents[i] == cCR) || (sourceFileContents[i] == cLF))
             ++currentRow;
         if ((sourceFileContents[i] == cCR) && (sourceFileContents[i + 1] == cLF))
@@ -55,8 +53,7 @@ void printCompileError(string text, const string &sourceFileContents, TSCodePosi
     size_t lineStartIndex = i;
     
     j = 1;
-    while ((sourceFileContents[i] != cCR) && (sourceFileContents[i] != cLF) && (i < sourceFileContents.size()))
-    {
+    while ((sourceFileContents[i] != cCR) && (sourceFileContents[i] != cLF) && (i < sourceFileContents.size())) {
         if (j == pos.column)
             cout << TSColor::BRed << flush;
         else if (j == pos.column + pos.length)
@@ -74,8 +71,7 @@ void printCompileError(string text, const string &sourceFileContents, TSCodePosi
 
     i = lineStartIndex;
     j = 1;
-    while (j < pos.column)
-    {
+    while (j < pos.column) {
         if (sourceFileContents[i] == 0x9)
             cout << "    ";
         else
@@ -89,12 +85,10 @@ void printCompileError(string text, const string &sourceFileContents, TSCodePosi
     cout << TSColor::Reset << flush;
 }
 
-string getTokenString(const TSToken &token)
-{
+string getTokenString(const TSToken &token) {
     string returnString;
 
-    switch (token.type())
-    {
+    switch (token.type()) {
     case TSToken::Type::USER_IDENTIFIER:
         returnString = token.value<string>();
         break;
@@ -146,29 +140,27 @@ string getTokenString(const TSToken &token)
     case TSToken::Type::END_DIRECTIVE:
         returnString = TSToken::endDirectiveStr;
         break;
+    case TSToken::Type::ASSUME_DIRECTIVE:
+        returnString = TSToken::assumeDirectiveStr;
     }
 
     return returnString;
 }
 
-string getTokenDescription(const TSToken &token)
-{
+string getTokenDescription(const TSToken &token) {
     string res = tokenTypeDescriptionMap.find(token.type())->second;
 
-    if (token.type() == TSToken::Type::REGISTER)
-    {
+    if (token.type() == TSToken::Type::REGISTER) {
         TSToken::Register reg = token.value<TSToken::Register>();
 
-        if (reg.match(TSOperandMask::UREG))
-        {
+        if (reg.match(TSOperandMask::UREG)) {
             if (reg.match(TSOperandMask::S8))
                 res += " 8";
             else if (reg.match(TSOperandMask::S16))
                 res += " 16";
             else
                 res += " 32";
-        }
-        else
+        } else
             res += " Segment";
     }
 
@@ -187,12 +179,10 @@ constexpr auto tch8     = "\u2534"; // ┴
 constexpr auto tch9     = "\u252c"; // ┬
 constexpr auto tch10    = "\u253c"; // ┼
 
-size_t getMaxWidth(const vector<string> &strVector)
-{
+size_t getMaxWidth(const vector<string> &strVector) {
     size_t maxWidth = 0;
     
-    for (auto it = strVector.begin(); it != strVector.end(); ++it)
-    {
+    for (auto it = strVector.begin(); it != strVector.end(); ++it) {
         if (it->size() > maxWidth)
             maxWidth = it->size();
     }
@@ -200,15 +190,13 @@ size_t getMaxWidth(const vector<string> &strVector)
     return maxWidth;
 }
 
-void printSpace(size_t ammount)
-{
+void printSpace(size_t ammount) {
     for (size_t i = 0; i < ammount; ++i)
         cout << ' ';
     cout << flush;
 }
 
-void printTable(string name, const vector<vector<string>> &data)
-{
+void printTable(string name, const vector<vector<string>> &data) {
     cout << TSColor::BWhite << flush;
 
     vector<size_t> maxWidthVector(data.size());
@@ -220,8 +208,7 @@ void printTable(string name, const vector<vector<string>> &data)
         wholeWidth += *it;
 
     cout << tch3;
-    for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it)
-    {
+    for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it) {
         for (size_t i = 0; i < *it; ++i)
             cout << tch0;
         if (it != maxWidthVector.end() - 1)
@@ -230,19 +217,16 @@ void printTable(string name, const vector<vector<string>> &data)
     cout << tch2 << endl;
 
     cout << tch1;
-    if (name.size() < (wholeWidth + data.size()))
-    {
+    if (name.size() < (wholeWidth + data.size())) {
         printSpace((wholeWidth + data.size() - 1 - name.size()) / 2);
         cout << name;
         printSpace((wholeWidth + data.size() - 1) - ((wholeWidth + data.size() - 1 - name.size()) / 2) - name.size());
-    }
-    else
+    } else
         cout << string(name.begin(), name.begin() + (wholeWidth + data.size() - 1));
     cout << tch1 << endl;
 
     cout << tch7;
-    for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it)
-    {
+    for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it) {
         for (size_t i = 0; i < *it; ++i)
             cout << tch0;
         if (it != maxWidthVector.end() - 1)
@@ -250,28 +234,22 @@ void printTable(string name, const vector<vector<string>> &data)
     }
     cout << tch6 << endl;
 
-    for (size_t i = 0; i < data[0].size(); ++i)
-    {
+    for (size_t i = 0; i < data[0].size(); ++i) {
         cout << tch1;
-        for (size_t j = 0; j < data.size(); ++j)
-        {
-            if (i < data[j].size())
-            {
+        for (size_t j = 0; j < data.size(); ++j) {
+            if (i < data[j].size()) {
                 cout << data[j][i];
                 printSpace(maxWidthVector[j] - data[j][i].size());
-            }
-            else
+            } else
                 printSpace(maxWidthVector[j]);
 
             cout << tch1;
         }
         cout << endl;
 
-        if (i != data[0].size() - 1)
-        {
+        if (i != data[0].size() - 1) {
             cout << tch7;
-            for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it)
-            {
+            for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it) {
                 for (size_t i = 0; i < *it; ++i)
                     cout << tch0;
                 if (it != maxWidthVector.end() - 1)
@@ -282,8 +260,7 @@ void printTable(string name, const vector<vector<string>> &data)
     }
 
     cout << tch4;
-    for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it)
-    {
+    for (auto it = maxWidthVector.begin(); it != maxWidthVector.end(); ++it) {
         for (size_t i = 0; i < *it; ++i)
             cout << tch0;
         if (it != maxWidthVector.end() - 1)
@@ -294,15 +271,13 @@ void printTable(string name, const vector<vector<string>> &data)
     cout << TSColor::Reset << flush;
 }
 
-void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector)
-{
+void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector) {
     vector<string> strIndexVector{"Index"};
     vector<string> strCoordsVector{"Coords"};
     vector<string> strTokenVector{"Name"};
     vector<string> strTokenDescriptionVector{"Description"};
 
-    for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it)
-    {
+    for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it) {
         strIndexVector.push_back(std::to_string(it - tokenContainerVector.begin()));
         strCoordsVector.push_back(string("(") + std::to_string(it->pos.row) + "," + std::to_string(it->pos.column) + ")");
         strTokenVector.push_back(getTokenString(it->token));
@@ -319,8 +294,7 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const
     vector<string> strTokenVector{"Name"};
     vector<string> strTokenDescriptionVector{"Description"};
 
-    for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it)
-    {
+    for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it) {
         strIndexVector.push_back(std::to_string(it - tokenContainerVector.begin()));
         strCoordsVector.push_back(string("(") + std::to_string(it->pos.row) + "," + std::to_string(it->pos.column) + ")");
         strTokenVector.push_back(lexemeContainerVector[it - tokenContainerVector.begin()].lexeme);
@@ -330,13 +304,11 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const
     printTable("Native Lexeme Table", {strIndexVector, strCoordsVector, strTokenVector, strTokenDescriptionVector});
 }
 
-void printEquTable(const map<string, TSInteger> &equMap)
-{
+void printEquTable(const map<string, TSInteger> &equMap) {
     vector<string> strNameVector{"Name"};
     vector<string> strValueVector{"Value"};
 
-    for (auto it = equMap.begin(); it != equMap.end(); ++it)
-    {
+    for (auto it = equMap.begin(); it != equMap.end(); ++it) {
         strNameVector.push_back(it->first);
         strValueVector.push_back(it->second.str());
     }
@@ -344,15 +316,13 @@ void printEquTable(const map<string, TSInteger> &equMap)
     printTable("EQU Table", {strNameVector, strValueVector});
 }
 
-void printPseudoLabelTable(const map<string, TSLabel> &labelMap)
-{
+void printPseudoLabelTable(const map<string, TSLabel> &labelMap) {
     vector<string> strNameVector{"Name"};
     vector<string> strTypeVector{"Type"};
     vector<string> strIndexVector{"Index"};
     vector<string> strSegmentVector{"Segment"};
 
-    for (auto it = labelMap.begin(); it != labelMap.end(); ++it)
-    {
+    for (auto it = labelMap.begin(); it != labelMap.end(); ++it) {
         strNameVector.push_back(it->first);
         strTypeVector.push_back(it->second.dataIdentifier ? findByValue(TSToken::dataIdentifierMap, *it->second.dataIdentifier)->first : "LABEL");
         strIndexVector.push_back(std::to_string(it->second.ptr));
@@ -362,13 +332,10 @@ void printPseudoLabelTable(const map<string, TSLabel> &labelMap)
     printTable("Pseudo Label Table", {strNameVector, strTypeVector, strIndexVector, strSegmentVector});
 }
 
-void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &segmentPseudoSentenceVector)
-{
+void printPseudoSentenceTable(const vector<TSPseudoSentencesSegment> &segmentPseudoSentenceVector, bool printAssumes) {
     size_t maxOpsAmmount = 0;
-    for (auto segIt = segmentPseudoSentenceVector.begin(); segIt != segmentPseudoSentenceVector.end(); ++segIt)
-    {
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
+    for (auto segIt = segmentPseudoSentenceVector.begin(); segIt != segmentPseudoSentenceVector.end(); ++segIt) {
+        for (auto it = segIt->pseudoSentences.begin(); it != segIt->pseudoSentences.end(); ++it) {
             if (it->operandsTokenContainerVector.size() > maxOpsAmmount)
                 maxOpsAmmount = it->operandsTokenContainerVector.size();
         }
@@ -376,8 +343,7 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
 
     vector<vector<string>> strOperandsVector;
 
-    for (size_t i = 0; i < maxOpsAmmount; ++i)
-    {
+    for (size_t i = 0; i < maxOpsAmmount; ++i) {
         vector<string> strOperandVector(1, string("Op ") + std::to_string(i + 1));
         strOperandsVector.push_back(strOperandVector);
     }
@@ -385,18 +351,28 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
     vector<string> strIndexVector{"Index"};
     vector<string> strNameVector{"Name"};
     vector<string> strSegmentVector{"Segment"};
+    vector<string> strAssumesVector{"Assumes"};
 
-    for (auto segIt = segmentPseudoSentenceVector.begin(); segIt != segmentPseudoSentenceVector.end(); ++segIt)
-    {
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
-            strIndexVector.push_back(std::to_string(it - get<1>(*segIt).begin()));
+    for (auto segIt = segmentPseudoSentenceVector.begin(); segIt != segmentPseudoSentenceVector.end(); ++segIt) {
+        for (auto it = segIt->pseudoSentences.begin(); it != segIt->pseudoSentences.end(); ++it) {
+            strIndexVector.push_back(std::to_string(it - segIt->pseudoSentences.begin()));
             strNameVector.push_back(getTokenString(it->baseTokenContainer.token));
-            strSegmentVector.push_back(get<0>(*segIt));
+            strSegmentVector.push_back(segIt->segName);
+
+            auto assumeMap = it->assume.getMap();
+            string assumeStr;
+            for (auto jt = assumeMap.begin(); jt != assumeMap.end(); ++jt) {
+                if (!assumeStr.empty())
+                    assumeStr += ", ";
+                assumeStr += jt->first;
+                assumeStr += ":";
+                assumeStr += findByValue(TSToken::registerMap, jt->second)->first;
+            }
+
+            strAssumesVector.push_back(assumeStr);
 
             size_t i;
-            for (i = 0; i < it->operandsTokenContainerVector.size(); ++i)
-            {
+            for (i = 0; i < it->operandsTokenContainerVector.size(); ++i) {
                 string opStr;
                 for (size_t j = 0; j < it->operandsTokenContainerVector[i].size(); ++j)
                     opStr += getTokenString(it->operandsTokenContainerVector[i][j].token) + ' ';
@@ -411,17 +387,16 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &s
 
     vector<vector<string>> strTableVectors{strIndexVector, strNameVector, strSegmentVector};
     strTableVectors.insert(strTableVectors.end(), strOperandsVector.begin(), strOperandsVector.end());
+    if (printAssumes)
+        strTableVectors.push_back(strAssumesVector);
 
     printTable("Pseudo Sentence Table", strTableVectors);
 }
 
-void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap)
-{
+void printRawSentenceTable(const vector<TSRawSentencesSegment> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap, bool printAssumes) {
     size_t maxOpsAmmount = 0;
-    for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt)
-    {
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
+    for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt) {
+        for (auto it = segIt->rawSentences.begin(); it != segIt->rawSentences.end(); ++it) {
             auto present = (*it)->present(labelMap);
             const vector<string> &operandStrVector = get<1>(present);
 
@@ -432,8 +407,7 @@ void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSent
 
     vector<vector<string>> strOperandsVector;
 
-    for (size_t i = 0; i < maxOpsAmmount; ++i)
-    {
+    for (size_t i = 0; i < maxOpsAmmount; ++i) {
         vector<string> strOperandVector(1, string("Op ") + std::to_string(i + 1));
         strOperandsVector.push_back(strOperandVector);
     }
@@ -441,23 +415,32 @@ void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSent
     vector<string> strIndexVector{"Index"};
     vector<string> strNameVector{"Name"};
     vector<string> strSegmentVector{"Segment"};
+    vector<string> strAssumesVector{"Assumes"};
 
-    for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt)
-    {
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
+    for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt) {
+        for (auto it = segIt->rawSentences.begin(); it != segIt->rawSentences.end(); ++it) {
             auto present = (*it)->present(labelMap);
             const vector<string> &operandStrVector = get<1>(present);
 
-            strIndexVector.push_back(std::to_string(it - get<1>(*segIt).begin()));
+            strIndexVector.push_back(std::to_string(it - segIt->rawSentences.begin()));
             strNameVector.push_back(get<0>(present));
-            strSegmentVector.push_back(get<0>(*segIt));
+            strSegmentVector.push_back(segIt->segName);
+
+            auto assumeMap = (*it)->assume().getMap();
+            string assumeStr;
+            for (auto jt = assumeMap.begin(); jt != assumeMap.end(); ++jt) {
+                if (!assumeStr.empty())
+                    assumeStr += ", ";
+                assumeStr += jt->first;
+                assumeStr += ":";
+                assumeStr += findByValue(TSToken::registerMap, jt->second)->first;
+            }
+
+            strAssumesVector.push_back(assumeStr);
 
             size_t i;
             for (i = 0; i < operandStrVector.size(); ++i)
-            {
                 strOperandsVector[i].push_back(operandStrVector[i]);
-            }
 
             for (; i < strOperandsVector.size(); ++i)
                 strOperandsVector[i].push_back("");
@@ -466,17 +449,17 @@ void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSent
 
     vector<vector<string>> strTableVectors{strIndexVector, strNameVector, strSegmentVector};
     strTableVectors.insert(strTableVectors.end(), strOperandsVector.begin(), strOperandsVector.end());
+    if (printAssumes)
+        strTableVectors.push_back(strAssumesVector);
 
     printTable("Raw Sentence Table", strTableVectors);
 }
 
-void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector)
+void printSentenceTable(const vector<TSSentencesSegment> &sentencesSegmentContainerVector, bool printAssumes)
 {
     size_t maxOpsAmmount = 0;
-    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
-    {
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt) {
+        for (auto it = segIt->sentences.begin(); it != segIt->sentences.end(); ++it) {
             auto present = (*it)->present();
             const vector<string> &operandStrVector = get<1>(present);
 
@@ -487,8 +470,7 @@ void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegm
 
     vector<vector<string>> strOperandsVector;
 
-    for (size_t i = 0; i < maxOpsAmmount; ++i)
-    {
+    for (size_t i = 0; i < maxOpsAmmount; ++i) {
         vector<string> strOperandVector(1, string("Op ") + std::to_string(i + 1));
         strOperandsVector.push_back(strOperandVector);
     }
@@ -496,23 +478,32 @@ void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegm
     vector<string> strIndexVector{"Index"};
     vector<string> strNameVector{"Name"};
     vector<string> strSegmentVector{"Segment"};
+    vector<string> strAssumesVector{"Assumes"};
 
-    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
-    {
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt) {
+        for (auto it = segIt->sentences.begin(); it != segIt->sentences.end(); ++it) {
             auto present = (*it)->present();
             const vector<string> &operandStrVector = get<1>(present);
 
-            strIndexVector.push_back(std::to_string(it - get<1>(*segIt).begin()));
+            strIndexVector.push_back(std::to_string(it - segIt->sentences.begin()));
             strNameVector.push_back(get<0>(present));
-            strSegmentVector.push_back(get<0>(*segIt));
+            strSegmentVector.push_back(segIt->segName);
+
+            auto assumeMap = (*it)->assume.getMap();
+            string assumeStr;
+            for (auto jt = assumeMap.begin(); jt != assumeMap.end(); ++jt) {
+                if (!assumeStr.empty())
+                    assumeStr += ", ";
+                assumeStr += jt->first;
+                assumeStr += ":";
+                assumeStr += findByValue(TSToken::registerMap, jt->second)->first;
+            }
+
+            strAssumesVector.push_back(assumeStr);
 
             size_t i;
             for (i = 0; i < operandStrVector.size(); ++i)
-            {
                 strOperandsVector[i].push_back(operandStrVector[i]);
-            }
 
             for (; i < strOperandsVector.size(); ++i)
                 strOperandsVector[i].push_back("");
@@ -521,20 +512,19 @@ void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegm
 
     vector<vector<string>> strTableVectors{strIndexVector, strNameVector, strSegmentVector};
     strTableVectors.insert(strTableVectors.end(), strOperandsVector.begin(), strOperandsVector.end());
+    if (printAssumes)
+        strTableVectors.push_back(strAssumesVector);
 
     printTable("Sentence Table", strTableVectors);
 }
 
-string hexStringFromSentenceBytePresentation(const vector<vector<uchar>> &sentenceBytePresentation)
-{
+string hexStringFromSentenceBytePresentation(const vector<vector<uchar>> &sentenceBytePresentation) {
     std::stringstream strStream;
     strStream << std::hex << std::uppercase << std::setfill('0');
     
-    for (auto it = sentenceBytePresentation.begin(); it != sentenceBytePresentation.end(); ++it)
-    {
+    for (auto it = sentenceBytePresentation.begin(); it != sentenceBytePresentation.end(); ++it) {
         auto jt = it->end();
-        do
-        {
+        do {
             --jt;
 
             strStream << std::setw(2) << (unsigned int)*jt;
@@ -547,23 +537,19 @@ string hexStringFromSentenceBytePresentation(const vector<vector<uchar>> &senten
     return strStream.str();
 }
 
-void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector)
-{
-    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
-    {
-        cout << get<0>(*segIt) << " SEGMENT" << endl << endl;
+void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVector) {
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt) {
+        cout << segIt->segName << " SEGMENT" << endl << endl;
 
         size_t disp = 0;
         cout << std::setfill('0') << std::uppercase;
         
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
+        for (auto it = segIt->sentences.begin(); it != segIt->sentences.end(); ++it) {
             cout << std::hex << std::setw(4) << disp << std::dec << "  ";
             
             auto computeRes = (*it)->compute();
             string sentenceByteCodeStr = hexStringFromSentenceBytePresentation(computeRes);
-            for (size_t i = 0; i < sentenceByteCodeStr.size(); ++i)
-            {
+            for (size_t i = 0; i < sentenceByteCodeStr.size(); ++i) {
                 cout << sentenceByteCodeStr[i];
                 if (((i % 29) == 0) && (i != 0))
                     cout << endl << "      ";
@@ -573,8 +559,7 @@ void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentCon
             auto sentencePresent = (*it)->present();
             cout << get<0>(sentencePresent);
             printSpace(10 - get<0>(sentencePresent).size());
-            for (auto jt = get<1>(sentencePresent).begin(); jt != get<1>(sentencePresent).end(); ++jt)
-            {
+            for (auto jt = get<1>(sentencePresent).begin(); jt != get<1>(sentencePresent).end(); ++jt) {
                 if (jt != get<1>(sentencePresent).begin())
                     cout << ',';
                 cout << *jt;
@@ -589,44 +574,38 @@ void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentCon
 
         cout << std::setfill(' ');
 
-        cout << endl << get<0>(*segIt) << " ENDS" << endl << endl;;
+        cout << endl << segIt->segName << " ENDS" << endl << endl;;
     }
 }
 
-void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const TSPseudoSentenceSplitType &pseudoSentenceSplit)
-{
-    const vector<TSPseudoSentencesSegmentContainer> &pseudoSentencesSegmentContainerVector = get<0>(pseudoSentenceSplit);
+void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVector, const tuple<vector<TSPseudoSentencesSegment>, map<string, TSLabel>> &pseudoSentenceSplit) {
+    const vector<TSPseudoSentencesSegment> &pseudoSentencesSegmentContainerVector = get<0>(pseudoSentenceSplit);
     const map<string, TSLabel> &labelMap = get<1>(pseudoSentenceSplit);
     
-    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt)
-    {
-        const vector<TSPseudoSentence> &pseudoSentenceVector = get<1>(pseudoSentencesSegmentContainerVector[segIt - sentencesSegmentContainerVector.begin()]);
+    for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt) {
+        const vector<TSPseudoSentence> &pseudoSentenceVector = (pseudoSentencesSegmentContainerVector[segIt - sentencesSegmentContainerVector.begin()]).pseudoSentences;
 
-        cout << get<0>(*segIt) << " SEGMENT" << endl << endl;
+        cout << segIt->segName << " SEGMENT" << endl << endl;
 
         size_t disp = 0;
         cout << std::setfill('0') << std::uppercase;
         
-        for (auto it = get<1>(*segIt).begin(); it != get<1>(*segIt).end(); ++it)
-        {
-            for (auto jt = labelMap.begin(); jt != labelMap.end(); ++jt)
-            {
-                if ((get<0>(*segIt) == jt->second.segName) && ((size_t)(it - get<1>(*segIt).begin()) == jt->second.ptr))
-                {
+        for (auto it = segIt->sentences.begin(); it != segIt->sentences.end(); ++it) {
+            for (auto jt = labelMap.begin(); jt != labelMap.end(); ++jt) {
+                if ((segIt->segName == jt->second.segName) && ((size_t)(it - segIt->sentences.begin()) == jt->second.ptr)) {
                     printSpace(6);
                     cout << jt->first << ':' << endl;
                     break;
                 }
             }
 
-            const TSPseudoSentence &pseudoSentence = pseudoSentenceVector[it - get<1>(*segIt).begin()];
+            const TSPseudoSentence &pseudoSentence = pseudoSentenceVector[it - segIt->sentences.begin()];
 
             cout << std::hex << std::setw(4) << disp << std::dec << "  ";
             
             auto computeRes = (*it)->compute();
             string sentenceByteCodeStr = hexStringFromSentenceBytePresentation(computeRes);
-            for (size_t i = 0; i < sentenceByteCodeStr.size(); ++i)
-            {
+            for (size_t i = 0; i < sentenceByteCodeStr.size(); ++i) {
                 cout << sentenceByteCodeStr[i];
                 if (((i % 29) == 0) && (i != 0))
                     cout << endl << "      ";
@@ -637,11 +616,9 @@ void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentCon
             cout << get<0>(sentencePresent);
             printSpace(10 - get<0>(sentencePresent).size());
 
-            for (auto jt = pseudoSentence.operandsTokenContainerVector.begin(); jt != pseudoSentence.operandsTokenContainerVector.end(); ++jt)
-            {
+            for (auto jt = pseudoSentence.operandsTokenContainerVector.begin(); jt != pseudoSentence.operandsTokenContainerVector.end(); ++jt) {
                 bool isPreviousSingleChar = true;
-                for (auto kt = jt->begin(); kt != jt->end(); ++kt)
-                {
+                for (auto kt = jt->begin(); kt != jt->end(); ++kt) {
                     string tokenStr = getTokenString(kt->token);
                     bool isSingleChar = (tokenStr.size() == 1) && (isCharSingleCharacterLexemeCompatible(tokenStr[0]));
 
@@ -662,10 +639,8 @@ void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentCon
             disp += getInstructionBytePresentSize(computeRes);
         }
 
-        for (auto jt = labelMap.begin(); jt != labelMap.end(); ++jt)
-        {
-            if ((get<0>(*segIt) == jt->second.segName) && (get<1>(*segIt).size() == jt->second.ptr))
-            {
+        for (auto jt = labelMap.begin(); jt != labelMap.end(); ++jt) {
+            if ((segIt->segName == jt->second.segName) && (segIt->sentences.size() == jt->second.ptr)) {
                 printSpace(6);
                 cout << jt->first << ':' << endl;
                 break;
@@ -676,6 +651,6 @@ void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentCon
 
         cout << std::setfill(' ');
 
-        cout << endl << get<0>(*segIt) << " ENDS" << endl << endl;;
+        cout << endl << segIt->segName << " ENDS" << endl << endl;;
     }
 }

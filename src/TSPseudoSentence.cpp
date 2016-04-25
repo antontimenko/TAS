@@ -5,9 +5,16 @@
 
 using namespace TSOperandMask;
 
-TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSegmentContainer> &segmentTokenContainerVector)
-{
+tuple<vector<TSPseudoSentencesSegment>, map<string, TSLabel>> splitPseudoSentences(const vector<TSTokenSegment> &segmentTokenContainerVector) {
     typedef vector<TSTokenContainer>::const_iterator ItType;
+
+    auto findSegmentByName = [](string segName, const vector<TSTokenSegment> &tokenSegments) -> vector<TSTokenSegment>::const_iterator {
+        for (auto it = tokenSegments.begin(); it != tokenSegments.end(); ++it)
+            if (it->segName == segName)
+                return it;
+
+        return tokenSegments.end();
+    };
 
     auto locateMemoryBrackets = [](ItType it, ItType endIt) -> ItType {
         while ((it != endIt) &&
@@ -47,8 +54,7 @@ TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSeg
             return it + 1;
         }
 
-        if (it->token.type() == TSToken::Type::SIZE_IDENTIFIER)
-        {
+        if (it->token.type() == TSToken::Type::SIZE_IDENTIFIER) {
             ++it;
             if (it->token.type() == TSToken::Type::SIZE_OPERATOR)
                 ++it;
@@ -85,56 +91,48 @@ TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSeg
         }
 
         if (it->token.type() == TSToken::Type::CONSTANT_STRING)
-        {
             return it + 1;
-        }
 
         return it;
     };
 
-    vector<TSPseudoSentencesSegmentContainer> segmentPseudoSentenceVector;
+    vector<TSPseudoSentencesSegment> segmentPseudoSentenceVector;
     map<string, TSLabel> labelMap;
 
-    for (auto segIt = segmentTokenContainerVector.begin(); segIt != segmentTokenContainerVector.end(); ++segIt)
-    {
+    for (auto segIt = segmentTokenContainerVector.begin(); segIt != segmentTokenContainerVector.end(); ++segIt) {
         vector<TSPseudoSentence> pseudoSentenceVector;
 
-        auto beginIt = get<1>(*segIt).begin();
-        auto endIt = get<1>(*segIt).end();
+        TSAssume currentAssume;
+
+        auto beginIt = segIt->tokenContainers.begin();
+        auto endIt = segIt->tokenContainers.end();
         auto it = beginIt;
-        while (it != endIt)
-        {
-            if (it->token.type() == TSToken::Type::USER_IDENTIFIER)
-            {
+        while (it != endIt) {
+            if (it->token.type() == TSToken::Type::USER_IDENTIFIER) {
                 ++it;
                 if (it == endIt)
                     throw TSCompileError("must be colon or size identifier", it->pos);
 
-                if (it->token.type() == TSToken::Type::COLON)
-                {
+                if (it->token.type() == TSToken::Type::COLON) {
                     if (labelMap.count((it - 1)->token.value<string>()))
                         throw TSCompileError("duplicate label", (it - 1)->pos);
 
                     labelMap[(it - 1)->token.value<string>()] = {nullopt,
                                                                  pseudoSentenceVector.size(),
-                                                                 get<0>(*segIt)};
+                                                                 segIt->segName};
                     
                     ++it;
-                }
-                else if (it->token.type() == TSToken::Type::DATA_IDENTIFIER)
-                {
+                } else if (it->token.type() == TSToken::Type::DATA_IDENTIFIER) {
                     if (labelMap.count((it - 1)->token.value<string>()))
                         throw TSCompileError("duplicate label", (it - 1)->pos);
 
                     labelMap[(it - 1)->token.value<string>()] = {it->token.value<TSToken::DataIdentifier>(),
                                                                  pseudoSentenceVector.size(),
-                                                                 get<0>(*segIt)};
-                }
-                else
+                                                                 segIt->segName};
+                } else
                     throw TSCompileError("must be colon or size identifier", (it - 1)->pos);
-            }
-            else if ((it->token.type() == TSToken::Type::INSTRUCTION) ||
-                     (it->token.type() == TSToken::Type::DATA_IDENTIFIER))
+            } else if ((it->token.type() == TSToken::Type::INSTRUCTION) ||
+                       (it->token.type() == TSToken::Type::DATA_IDENTIFIER))
             {
                 TSPseudoSentence pseudoSentence;
                 pseudoSentence.baseTokenContainer = *it;
@@ -142,13 +140,11 @@ TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSeg
                 ++it;
 
                 auto operandEndIt = locateOperand(it, endIt);
-                if (operandEndIt != it)
-                {
+                if (operandEndIt != it) {
                     pseudoSentence.operandsTokenContainerVector.push_back(vector<TSTokenContainer>(it, operandEndIt));
                     it = operandEndIt;
 
-                    while ((it != endIt) && (it->token.type() == TSToken::Type::COMMA))
-                    {
+                    while ((it != endIt) && (it->token.type() == TSToken::Type::COMMA)) {
                         ++it;
                         if ((it == endIt) || (locateOperand(it, endIt) == it))
                             throw TSCompileError("no operand after comma", (it - 1)->pos);
@@ -171,13 +167,49 @@ TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSeg
                     --it;
                 }
 
+                pseudoSentence.assume = currentAssume;
                 pseudoSentenceVector.push_back(pseudoSentence);
-            }
-            else
-                throw TSCompileError("an instruction, data identifier or label expected", it->pos);
+            } else if (it->token.type() == TSToken::Type::ASSUME_DIRECTIVE) {
+                ++it;
+                while (true) {
+                    if ((it == segIt->tokenContainers.end()) ||
+                        ((it + 1) == segIt->tokenContainers.end()) ||
+                        ((it + 2) == segIt->tokenContainers.end()))
+                    {
+                        throw TSCompileError("unexpected ASSUME end", (segIt->tokenContainers.end() - 1)->pos);
+                    }
+
+                    if ((it->token.type() != TSToken::Type::REGISTER) ||
+                        (!it->token.value<TSToken::Register>().match(TSOperandMask::SREG)))
+                    {
+                        throw TSCompileError("must be segment register here", it->pos);
+                    }
+
+                    if ((it + 1)->token.type() != TSToken::Type::COLON)
+                        throw TSCompileError("must be colon here", (it + 1)->pos);
+
+                    if ((it + 2)->token.type() != TSToken::Type::USER_IDENTIFIER)
+                        throw TSCompileError("must be segment name here", (it + 2)->pos);
+
+                    auto currentSegIt = findSegmentByName((it + 2)->token.value<string>(), segmentTokenContainerVector);
+
+                    if (currentSegIt == segmentTokenContainerVector.end())
+                        throw TSCompileError("must be segment name here", (it + 2)->pos);
+
+                    currentAssume.setSegment(currentSegIt->segName, it->token.value<TSToken::Register>());
+
+                    if (((it + 3) == segIt->tokenContainers.end()) || ((it + 3)->token.type() != TSToken::Type::COMMA)) {
+                        it += 3;
+                        break;
+                    }
+
+                    it += 4;
+                }
+            } else
+                throw TSCompileError("an instruction, data identifier, assume or label expected", it->pos);
         }
 
-        segmentPseudoSentenceVector.push_back(make_tuple(get<0>(*segIt), pseudoSentenceVector));
+        segmentPseudoSentenceVector.push_back({segIt->segName, pseudoSentenceVector});
     }
 
     return make_tuple(segmentPseudoSentenceVector, labelMap);

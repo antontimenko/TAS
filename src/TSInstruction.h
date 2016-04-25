@@ -4,36 +4,29 @@
 #include "TSGlobal.h"
 #include "TSOperandMask.h"
 #include "TSInteger.h"
-#include <initializer_list>
 #include <bitset>
 
-namespace TSOperandMask
-{
+namespace TSOperandMask {
 
 extern const map<string, Mask> registerMap;
+extern const set<Mask> segmentRegisters;
 
 };
 
 class TSInstructionSentence;
 
-namespace TSInstruction
-{
+namespace TSInstruction {
 
-enum class Instruction
-{
-    SCASD,
-    RCL,
-    DIV,
-    OR,
-    CMP,
-    AND,
-    MOV,
+enum class Instruction {
+    NOP,
+    SHL,
+    JC,
+    NOT,
     ADD,
-    JNB
+    SUB
 };
 
-enum class DataIdentifier
-{
+enum class DataIdentifier {
     DB,
     DW,
     DD
@@ -43,8 +36,7 @@ extern const map<string, Instruction> instructionMap;
 extern const map<string, DataIdentifier> dataIdentifierMap;
 extern const set<Instruction> jumpInstructionsSet;
 
-class OperandFullMask
-{
+class OperandFullMask {
 public:
     inline OperandFullMask(TSOperandMask::Mask mask, TSInteger num) :
         mask(mask),
@@ -59,8 +51,7 @@ public:
     optional<TSInteger> num;
 };
 
-class Definition
-{
+class Definition {
 public:
     typedef TSInstruction::Instruction Instruction;
 

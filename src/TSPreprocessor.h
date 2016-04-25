@@ -5,9 +5,12 @@
 #include "TSToken.h"
 #include "TSMath.h"
 
-typedef tuple<string, vector<TSTokenContainer>> TSTokenContainersSegmentContainer;
+struct TSTokenSegment {
+    string segName;
+    vector<TSTokenContainer> tokenContainers;
+};
 
 vector<TSTokenContainer>::const_iterator getMathTokenSequence(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end);
-vector<TSTokenContainersSegmentContainer> preprocess(const vector<TSTokenContainer> &tokenContainerVector);
+tuple<vector<TSTokenSegment>, map<string, TSInteger>> preprocess(const vector<TSTokenContainer> &tokenContainerVector);
 
 #endif

@@ -9,35 +9,40 @@
 #include "TSUniquePtr.h"
 #include "TSSentence.h"
 
-struct TSRawNumber
-{
+struct TSRawNumber {
     TSInteger num;
     optional<TSLabel> label;
+    bool isNotFinal;
 };
 
 class TSSentenceSize;
 
-class TSRawSentence
-{
+class TSRawSentence {
 public:
     virtual tuple<string, vector<string>> present(const map<string, TSLabel> &labelMap) const = 0;
     
-    inline TSRawSentence(TSCodePosition pos) :
-        _pos(pos)
+    inline TSRawSentence(TSCodePosition pos, TSAssume assume) :
+        _pos(pos),
+        _assume(assume)
     {}
 
-    TSCodePosition pos() const;
+    inline TSCodePosition pos() const {
+        return _pos;
+    }
+
+    inline TSAssume assume() const {
+        return _assume;
+    }
 private:
     TSCodePosition _pos;
+    TSAssume _assume;
 };
 
-class TSRawInstructionSentence : public TSRawSentence
-{
+class TSRawInstructionSentence : public TSRawSentence {
 public:
-    typedef TSInstructionSentence::Prefix Prefix;
+    typedef TSInstructionSentence::SegmentPrefix SegmentPrefix;
 
-    class Operand
-    {
+    class Operand {
     public:
         string present(const map<string, TSLabel> &labelMap) const;
         TSOperandMask::Mask mask;
@@ -50,16 +55,15 @@ public:
     TSRawInstructionSentence(const TSPseudoSentence &pseudoSentence, const map<string, TSLabel> &labelMap);
     virtual tuple<string, vector<string>> present(const map<string, TSLabel> &labelMap) const override;
 private:
-    vector<Prefix> prefixVector;
+    optional<SegmentPrefix> segmentPrefix;
     Instruction instruction;
     vector<OperandContainer> operandContainerVector;
 
     friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence, vector<bool> linkVector);
-    friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer);
+    friend vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment> &rawSentencesSegmentContainer);
 };
 
-class TSRawDataSentence : public TSRawSentence
-{
+class TSRawDataSentence : public TSRawSentence {
 public:
     typedef TSRawNumber Operand;
     typedef tuple<Operand, TSCodePosition> OperandContainer;
@@ -72,12 +76,17 @@ private:
     vector<OperandContainer> operandContainerVector;
 
     friend shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence, vector<bool> linkVector);
-    friend vector<TSSentencesSegmentContainer> constructSentences(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainer);
+    friend vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment> &rawSentencesSegmentContainer);
 };
 
-typedef tuple<string, vector<shared_ptr<TSRawSentence>>> TSRawSentencesSegmentContainer;
+struct TSRawSentencesSegment {
+    string segName;
+    vector<shared_ptr<TSRawSentence>> rawSentences;
+};
 
-vector<TSRawSentencesSegmentContainer> constructRawSentences(const vector<TSPseudoSentencesSegmentContainer> &pseudoSentencesSegmentContainerVector,
-                                                             const map<string, TSLabel> &labelMap);
+TSRawInstructionSentence::SegmentPrefix getSegmentOverridePrefix(TSToken::Register reg);
+
+vector<TSRawSentencesSegment> constructRawSentences(const vector<TSPseudoSentencesSegment> &pseudoSentencesSegmentContainerVector,
+                                                    const map<string, TSLabel> &labelMap);
 
 #endif

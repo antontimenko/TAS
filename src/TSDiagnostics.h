@@ -9,8 +9,8 @@
 #include "TSRawSentence.h"
 #include "TSSentence.h"
 
-namespace TSColor
-{
+namespace TSColor {
+
 constexpr auto Reset = "\033[0m";
 constexpr auto Black = "\033[30m";
 constexpr auto Red = "\033[31m";
@@ -28,6 +28,7 @@ constexpr auto BBlue = "\033[1m\033[34m";
 constexpr auto BMagenta = "\033[1m\033[35m";
 constexpr auto BCyan = "\033[1m\033[36m";
 constexpr auto BWhite = "\033[1m\033[37m";
+
 }
 
 void printError(string text);
@@ -36,17 +37,15 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector);
 void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const vector<TSLexemeContainer> &lexemeContainerVector);
 void printEquTable(const map<string, TSInteger> &equMap);
 void printPseudoLabelTable(const map<string, TSLabel> &labelMap);
-void printPseudoSentenceTable(const vector<TSPseudoSentencesSegmentContainer> &segmentPseudoSentenceVector);
-void printRawSentenceTable(const vector<TSRawSentencesSegmentContainer> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap);
-void printSentenceTable(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector);
-void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector);
-void printListing(const vector<TSSentencesSegmentContainer> &sentencesSegmentContainerVector, const TSPseudoSentenceSplitType &pseudoSentenceSplit);
+void printPseudoSentenceTable(const vector<TSPseudoSentencesSegment> &segmentPseudoSentenceVector, bool printAssumes = false);
+void printRawSentenceTable(const vector<TSRawSentencesSegment> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap, bool printAssumes = false);
+void printSentenceTable(const vector<TSSentencesSegment> &sentencesSegmentContainerVector, bool printAssumes = false);
+void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVector);
+void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVector, const tuple<vector<TSPseudoSentencesSegment>, map<string, TSLabel>> &pseudoSentenceSplit);
 
 template<typename T, typename U>
-typename map<T, U>::const_iterator findByValue(const map<T, U> &source, U value)
-{
-    for (auto it = source.begin(); it != source.end(); ++it)
-    {
+typename map<T, U>::const_iterator findByValue(const map<T, U> &source, U value) {
+    for (auto it = source.begin(); it != source.end(); ++it) {
         if (value == it->second)
             return it;
     }

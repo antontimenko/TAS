@@ -5,8 +5,7 @@
 #include "TSSentence.h"
 #include "TSException.h"
 
-namespace TSOperandMask
-{
+namespace TSOperandMask {
 
 const map<string, Mask> registerMap = {
     {"AL", AL},
@@ -44,23 +43,28 @@ const map<string, Mask> registerMap = {
     {"GS", GS}
 };
 
+const set<Mask> segmentRegisters = {
+    ES,
+    CS,
+    SS,
+    DS,
+    FS,
+    GS
+};
+
 }
 
-namespace TSInstruction
-{
+namespace TSInstruction {
 
 using namespace TSOperandMask;
 
 const map<string, Instruction> instructionMap = {
-    {"SCASD", Instruction::SCASD},
-    {"RCL", Instruction::RCL},
-    {"DIV", Instruction::DIV},
-    {"OR", Instruction::OR},
-    {"CMP", Instruction::CMP},
-    {"AND", Instruction::AND},
-    {"MOV", Instruction::MOV},
+    {"NOP", Instruction::NOP},
+    {"SHL", Instruction::SHL},
+    {"JC", Instruction::JC},
+    {"NOT", Instruction::NOT},
     {"ADD", Instruction::ADD},
-    {"JNB", Instruction::JNB}
+    {"SUB", Instruction::SUB}
 };
 
 const map<string, DataIdentifier> dataIdentifierMap = {
@@ -70,11 +74,10 @@ const map<string, DataIdentifier> dataIdentifierMap = {
 };
 
 const set<Instruction> jumpInstructionsSet = {
-    Instruction::JNB
+    Instruction::JC
 };
 
-uchar composeBits(bitset<2> one, bitset<3> two, bitset<3> three)
-{
+uchar composeBits(bitset<2> one, bitset<3> two, bitset<3> three) {
     uchar res = 0;
 
     res |= three.to_ulong();
@@ -84,8 +87,7 @@ uchar composeBits(bitset<2> one, bitset<3> two, bitset<3> three)
     return res;
 }
 
-bitset<3> getBitsetFromMask(const Mask &mask, bool useSecondRange = false)
-{
+bitset<3> getBitsetFromMask(const Mask &mask, bool useSecondRange = false) {
     uchar shift = useSecondRange ? 8 : 0;
 
     if (mask.match(OPVAL0 << shift))
@@ -108,22 +110,17 @@ bitset<3> getBitsetFromMask(const Mask &mask, bool useSecondRange = false)
         return 0b000;
 }
 
-bitset<2> getMOD(const TSInstructionSentence::OperandContainer &operandContainer)
-{
+bitset<2> getMOD(const TSInstructionSentence::OperandContainer &operandContainer) {
     const TSInstructionSentence::Operand &op = get<0>(operandContainer);
 
     if (!op.mask.match(MEM))
         return 0b11;
 
-    if (op.isLinkable)
-    {
-        if (op.mask.match(MEM_16))
-        {
+    if (op.isLinkable) {
+        if (op.mask.match(MEM_16)) {
             if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_16))
                 return 0b10;
-        }
-        else
-        {
+        } else {
             if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_32))
                 return 0b10;
         }
@@ -135,13 +132,10 @@ bitset<2> getMOD(const TSInstructionSentence::OperandContainer &operandContainer
     if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_8))
         return 0b01;
 
-    if (op.mask.match(MEM_16))
-    {
+    if (op.mask.match(MEM_16)) {
         if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_16))
             return 0b10;
-    }
-    else
-    {
+    } else {
         if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_32))
             return 0b10;
     }
@@ -149,8 +143,7 @@ bitset<2> getMOD(const TSInstructionSentence::OperandContainer &operandContainer
     throw TSCompileError("disp too big", get<1>(operandContainer));
 }
 
-bitset<2> getScale(const TSInstructionSentence::Operand &op)
-{
+bitset<2> getScale(const TSInstructionSentence::Operand &op) {
     if (op.mask.match(MEM_32_INDEX_MULT1))
         return 0b00;
     else if (op.mask.match(MEM_32_INDEX_MULT2))
@@ -163,21 +156,16 @@ bitset<2> getScale(const TSInstructionSentence::Operand &op)
         return 0b00;
 }
 
-TSInteger::Size getSuitableDispSize(const TSInstructionSentence::Operand &op)
-{
-    if (op.isLinkable)
-    {
+TSInteger::Size getSuitableDispSize(const TSInstructionSentence::Operand &op) {
+    if (op.isLinkable) {
         if (op.mask.match(MEM_32))
             return TSInteger::Size::S_32;
         else
             return TSInteger::Size::S_16;
-    }
-    else
-    {
+    } else {
         if (op.num.sizeSigned() <= TSInteger::Size::S_8)
             return TSInteger::Size::S_8;
-        else
-        {
+        else {
             if (op.mask.match(MEM_32))
                 return TSInteger::Size::S_32;
             else
@@ -186,17 +174,16 @@ TSInteger::Size getSuitableDispSize(const TSInstructionSentence::Operand &op)
     }
 }
 
-const map<TSInstructionSentence::Prefix, uchar> prefixMap = {
-    {TSInstructionSentence::Prefix::ES, 0x26},
-    {TSInstructionSentence::Prefix::CS, 0x2E},
-    {TSInstructionSentence::Prefix::SS, 0x36},
-    {TSInstructionSentence::Prefix::DS, 0x3E},
-    {TSInstructionSentence::Prefix::FS, 0x64},
-    {TSInstructionSentence::Prefix::GS, 0x65},
+const map<TSInstructionSentence::SegmentPrefix, uchar> prefixMap = {
+    {TSInstructionSentence::SegmentPrefix::ES, 0x26},
+    {TSInstructionSentence::SegmentPrefix::CS, 0x2E},
+    {TSInstructionSentence::SegmentPrefix::SS, 0x36},
+    {TSInstructionSentence::SegmentPrefix::DS, 0x3E},
+    {TSInstructionSentence::SegmentPrefix::FS, 0x64},
+    {TSInstructionSentence::SegmentPrefix::GS, 0x65},
 };
 
-vector<vector<uchar>> generateOpcode(const vector<uchar> &opcodeByteVector)
-{
+vector<vector<uchar>> generateOpcode(const vector<uchar> &opcodeByteVector) {
     vector<vector<uchar>> res;
 
     for (auto it = opcodeByteVector.begin(); it != opcodeByteVector.end(); ++it)
@@ -205,12 +192,45 @@ vector<vector<uchar>> generateOpcode(const vector<uchar> &opcodeByteVector)
     return res;
 }
 
-vector<vector<uchar>> generateSegmentOverridePrefixes(const TSInstructionSentence &instructionSentence)
-{
+vector<vector<uchar>> generateSegmentOverridePrefixes(const TSInstructionSentence &instructionSentence, const TSInstructionSentence::Operand &op) {
     vector<vector<uchar>> res;
 
-    for (auto it = instructionSentence.prefixVector.begin(); it != instructionSentence.prefixVector.end(); ++it)
-        res.push_back({prefixMap.find(*it)->second});
+    if (op.mask.match(MEM)) {
+        auto segmentPrefix = instructionSentence.segmentPrefix;
+
+        if (op.mask.match(MEM_16)) {
+            if ((!segmentPrefix) && (op.segName)) {
+                auto assumeMap = instructionSentence.assume.getMap();
+                auto assumeSegmentIt = assumeMap.find(*op.segName);
+                if (assumeSegmentIt != assumeMap.end())
+                    segmentPrefix = getSegmentOverridePrefix(assumeSegmentIt->second);
+            }
+
+            if (op.mask.match(MEM_16_BP) || 
+                op.mask.match(MEM_16_BP_SI) ||
+                op.mask.match(MEM_16_BP_DI))
+            {
+                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::SS))
+                    segmentPrefix = nullopt;
+            } else {
+                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::DS))
+                    segmentPrefix = nullopt;
+            }
+        } else {
+            if (op.mask.match(MEM_32_BASE_EBP) ||
+                op.mask.match(MEM_32_BASE_ESP))
+            {
+                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::SS))
+                    segmentPrefix = nullopt;
+            } else {
+                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::DS))
+                    segmentPrefix = nullopt;
+            }
+        }
+
+        if (segmentPrefix)
+            res.push_back({prefixMap.find(*segmentPrefix)->second});
+    }
 
     return res;
 }
@@ -218,8 +238,7 @@ vector<vector<uchar>> generateSegmentOverridePrefixes(const TSInstructionSentenc
 constexpr uchar dataSizeOverridePrefix    = 0x66;
 constexpr uchar addressSizeOverridePrefix = 0x67;
 
-vector<vector<uchar>> generateAddressSizeOverridePrefix(const TSInstructionSentence::Operand &op)
-{
+vector<vector<uchar>> generateAddressSizeOverridePrefix(const TSInstructionSentence::Operand &op) {
     vector<vector<uchar>> res;
 
     if ((op.mask.match(MEM)) &&
@@ -234,8 +253,7 @@ vector<vector<uchar>> generateAddressSizeOverridePrefix(const TSInstructionSente
     return res;
 }
 
-vector<vector<uchar>> generateDataSizeOverridePrefix(const TSInstructionSentence::Operand &op)
-{
+vector<vector<uchar>> generateDataSizeOverridePrefix(const TSInstructionSentence::Operand &op) {
     vector<vector<uchar>> res;
 
     if (((TSCompiler::arch == TSCompiler::Arch::X86_16) &&
@@ -249,118 +267,86 @@ vector<vector<uchar>> generateDataSizeOverridePrefix(const TSInstructionSentence
     return res;
 }
 
-vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandContainer &opCont, const bitset<3> &reg)
-{
+vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandContainer &opCont, const bitset<3> &reg) {
     vector<vector<uchar>> res;
 
     const TSInstructionSentence::Operand &op = get<0>(opCont);
 
-    if (op.mask.match(MEM_16))
-    {
-        if (op.mask.match(MEM_BASE))
-        {
-            if (op.mask.match(MEM_16_BP) && (op.num == 0) && (!op.isLinkable))
-            {
+    if (op.mask.match(MEM_16)) {
+        if (op.mask.match(MEM_BASE)) {
+            if (op.mask.match(MEM_16_BP) && (op.num == 0) && (!op.isLinkable)) {
                 res.push_back({composeBits(0b01, reg, 0b110)});
                 res.push_back({0});
-            }
-            else
-            {
+            } else {
                 res.push_back({composeBits(getMOD(opCont), reg, getBitsetFromMask(op.mask))});
                 
                 if ((op.num != 0) || op.isLinkable)
                     res.push_back(op.num.getCharArraySigned(getSuitableDispSize(op)));
             }
-        }
-        else
-        {
+        } else {
             res.push_back({composeBits(0b00, reg, 0b110)});
             res.push_back({op.num.getCharArraySigned(TSInteger::Size::S_16)});
         }
-    }
-    else if (op.mask.match(MEM_32))
-    {
-        if (op.mask.match(MEM_32_INDEX))
-        {
+    } else if (op.mask.match(MEM_32)) {
+        if (op.mask.match(MEM_32_INDEX)) {
             bitset<2> scale = getScale(op);
             bitset<3> index = getBitsetFromMask(op.mask, true);
 
-            if (op.mask.match(MEM_BASE))
-            {
-                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0) && (!op.isLinkable))
-                {
+            if (op.mask.match(MEM_BASE)) {
+                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0) && (!op.isLinkable)) {
                     res.push_back({composeBits(0b01, reg, 0b100)});
                     res.push_back({composeBits(scale, index, 0b101)});
                     res.push_back({0});
-                }
-                else
-                {
+                } else {
                     res.push_back({composeBits(getMOD(opCont), reg, 0b100)});
                     res.push_back({composeBits(scale, index, getBitsetFromMask(op.mask))});
 
                     if ((op.num != 0) || op.isLinkable)
                         res.push_back(op.num.getCharArraySigned(getSuitableDispSize(op)));
                 }
-            }
-            else
-            {
+            } else {
                 res.push_back({composeBits(0b00, reg, 0b100)});
                 res.push_back({composeBits(scale, index, 0b101)});
                 res.push_back({op.num.getCharArraySigned(TSInteger::Size::S_32)});
             }
-        }
-        else
-        {
-            if (op.mask.match(MEM_BASE))
-            {
-                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0) && (!op.isLinkable))
-                {
+        } else {
+            if (op.mask.match(MEM_BASE)) {
+                if (op.mask.match(MEM_32_BASE_EBP) && (op.num == 0) && (!op.isLinkable)) {
                     res.push_back({composeBits(0b01, reg, 0b101)});
                     res.push_back({0});
-                }
-                else if (op.mask.match(MEM_32_BASE_ESP))
-                {
+                } else if (op.mask.match(MEM_32_BASE_ESP)) {
                     res.push_back({composeBits(getMOD(opCont), reg, 0b100)});
                     res.push_back({composeBits(0b00, 0b100, 0b100)});
 
                     if ((op.num != 0) || op.isLinkable)
                         res.push_back({op.num.getCharArraySigned(getSuitableDispSize(op))});
-                }
-                else
-                {
+                } else {
                     res.push_back({composeBits(getMOD(opCont), reg, getBitsetFromMask(op.mask))});
                     
                     if ((op.num != 0) || op.isLinkable) 
                         res.push_back({op.num.getCharArraySigned(getSuitableDispSize(op))});
                 }
-            }
-            else
-            {
+            } else {
                 res.push_back({composeBits(0b00, reg, 0b110)});
                 res.push_back({op.num.getCharArraySigned(TSInteger::Size::S_32)});
             }
         }
-    }
-    else
-    {
+    } else {
         res.push_back({composeBits(getMOD(opCont), reg, getBitsetFromMask(op.mask))});
     }
 
     return res;
 }
 
-vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandContainer &mainOpCont, const TSInstructionSentence::OperandContainer &regOpCont)
-{
+vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandContainer &mainOpCont, const TSInstructionSentence::OperandContainer &regOpCont) {
     return generateMODRMAndSIB(mainOpCont, getBitsetFromMask(get<0>(regOpCont).mask));
 }
 
-vector<vector<uchar>> onlyOpcodeComputeFunc(Definition definition, TSInstructionSentence)
-{
+vector<vector<uchar>> onlyOpcodeComputeFunc(Definition definition, TSInstructionSentence) {
     return generateOpcode(definition.opcode);
 }
 
-vector<vector<uchar>> twoOpsOpcodeWithREGAndIMMComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
-{
+vector<vector<uchar>> twoOpsOpcodeWithREGAndIMMComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -369,14 +355,14 @@ vector<vector<uchar>> twoOpsOpcodeWithREGAndIMMComputeFunc(Definition definition
     auto &firstOp = get<0>(firstOpCont);
     auto &secondOp = get<0>(secondOpCont);
 
-    auto segmentOverridePrefixes = generateSegmentOverridePrefixes(instructionSentence);
+    auto segmentOverridePrefixes = generateSegmentOverridePrefixes(instructionSentence, firstOp);
     res.insert(res.end(), segmentOverridePrefixes.begin(), segmentOverridePrefixes.end());
-
-    auto addressSizeOverridePrefix = generateAddressSizeOverridePrefix(firstOp);
-    res.insert(res.end(), addressSizeOverridePrefix.begin(), addressSizeOverridePrefix.end());
 
     auto dataSizeOverridePrefix = generateDataSizeOverridePrefix(firstOp);
     res.insert(res.end(), dataSizeOverridePrefix.begin(), dataSizeOverridePrefix.end());
+
+    auto addressSizeOverridePrefix = generateAddressSizeOverridePrefix(firstOp);
+    res.insert(res.end(), addressSizeOverridePrefix.begin(), addressSizeOverridePrefix.end());
 
     auto opcode = generateOpcode(definition.opcode);
     res.insert(res.end(), opcode.begin(), opcode.end());
@@ -394,22 +380,21 @@ vector<vector<uchar>> twoOpsOpcodeWithREGAndIMMComputeFunc(Definition definition
     return res;
 }
 
-vector<vector<uchar>> oneOpOpcodeWithREGComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
-{
+vector<vector<uchar>> oneOpOpcodeWithREGComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
 
     auto &firstOp = get<0>(firstOpCont);
 
-    auto segmentOverridePrefixes = generateSegmentOverridePrefixes(instructionSentence);
+    auto segmentOverridePrefixes = generateSegmentOverridePrefixes(instructionSentence, firstOp);
     res.insert(res.end(), segmentOverridePrefixes.begin(), segmentOverridePrefixes.end());
-
-    auto addressSizeOverridePrefix = generateAddressSizeOverridePrefix(firstOp);
-    res.insert(res.end(), addressSizeOverridePrefix.begin(), addressSizeOverridePrefix.end());
 
     auto dataSizeOverridePrefix = generateDataSizeOverridePrefix(firstOp);
     res.insert(res.end(), dataSizeOverridePrefix.begin(), dataSizeOverridePrefix.end());
+
+    auto addressSizeOverridePrefix = generateAddressSizeOverridePrefix(firstOp);
+    res.insert(res.end(), addressSizeOverridePrefix.begin(), addressSizeOverridePrefix.end());
 
     auto opcode = generateOpcode(definition.opcode);
     res.insert(res.end(), opcode.begin(), opcode.end());
@@ -421,20 +406,16 @@ vector<vector<uchar>> oneOpOpcodeWithREGComputeFunc(Definition definition, TSIns
 }
 
 template<bool orderDirect>
-vector<vector<uchar>> twoOpsClassicComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
-{
+vector<vector<uchar>> twoOpsClassicComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     TSInstructionSentence::OperandContainer mainOpCont;
     TSInstructionSentence::OperandContainer regOpCont;
     
-    if (orderDirect)
-    {
+    if (orderDirect) {
         mainOpCont = instructionSentence.operandContainerVector[0];
         regOpCont = instructionSentence.operandContainerVector[1];
-    }
-    else
-    {
+    } else {
         mainOpCont = instructionSentence.operandContainerVector[1];
         regOpCont = instructionSentence.operandContainerVector[0];
     }
@@ -445,14 +426,14 @@ vector<vector<uchar>> twoOpsClassicComputeFunc(Definition definition, TSInstruct
     if (!mainOp.mask.matchAny(S_ANY))
         mainOp.mask |= regOp.mask & S_ANY;
 
-    auto segmentOverridePrefixes = generateSegmentOverridePrefixes(instructionSentence);
+    auto segmentOverridePrefixes = generateSegmentOverridePrefixes(instructionSentence, mainOp);
     res.insert(res.end(), segmentOverridePrefixes.begin(), segmentOverridePrefixes.end());
-
-    auto addressSizeOverridePrefix = generateAddressSizeOverridePrefix(mainOp);
-    res.insert(res.end(), addressSizeOverridePrefix.begin(), addressSizeOverridePrefix.end());
 
     auto dataSizeOverridePrefix = generateDataSizeOverridePrefix(mainOp);
     res.insert(res.end(), dataSizeOverridePrefix.begin(), dataSizeOverridePrefix.end());
+
+    auto addressSizeOverridePrefix = generateAddressSizeOverridePrefix(mainOp);
+    res.insert(res.end(), addressSizeOverridePrefix.begin(), addressSizeOverridePrefix.end());
 
     auto opcode = generateOpcode(definition.opcode);
     res.insert(res.end(), opcode.begin(), opcode.end());
@@ -463,8 +444,7 @@ vector<vector<uchar>> twoOpsClassicComputeFunc(Definition definition, TSInstruct
     return res;
 }
 
-vector<vector<uchar>> twoOpsAXSpecialWithIMMComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
-{
+vector<vector<uchar>> twoOpsAXSpecialWithIMMComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -490,20 +470,16 @@ vector<vector<uchar>> twoOpsAXSpecialWithIMMComputeFunc(Definition definition, T
 }
 
 template<bool orderDirect>
-vector<vector<uchar>> twoOpsMoffsSpecialComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
-{
+vector<vector<uchar>> twoOpsMoffsSpecialComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     TSInstructionSentence::OperandContainer mainOpCont;
     TSInstructionSentence::OperandContainer moffsOpCont;
     
-    if (orderDirect)
-    {
+    if (orderDirect) {
         mainOpCont = instructionSentence.operandContainerVector[1];
         moffsOpCont = instructionSentence.operandContainerVector[0];
-    }
-    else
-    {
+    } else {
         mainOpCont = instructionSentence.operandContainerVector[0];
         moffsOpCont = instructionSentence.operandContainerVector[1];
     }
@@ -525,8 +501,7 @@ vector<vector<uchar>> twoOpsMoffsSpecialComputeFunc(Definition definition, TSIns
     return res;
 }
 
-vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
-{
+vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -552,8 +527,7 @@ vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, T
     return res;
 }
 
-vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, TSInstructionSentence instructionSentence)
-{
+vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -563,15 +537,12 @@ vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, TSInstructi
     auto opcode = generateOpcode(definition.opcode);
     res.insert(res.end(), opcode.begin(), opcode.end());
 
-    if (definition.operandFullMasks[0].mask.match(REL32))
-    {
+    if (definition.operandFullMasks[0].mask.match(REL32)) {
         if (TSCompiler::arch == TSCompiler::Arch::X86_32)
             res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_32));
         else
             throw TSCompileError("too big relative path", get<1>(firstOpCont));
-    }
-    else if (definition.operandFullMasks[0].mask.match(REL16))
-    {
+    } else if (definition.operandFullMasks[0].mask.match(REL16)) {
         if (TSCompiler::arch == TSCompiler::Arch::X86_32)
             res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_32));
         else
@@ -584,37 +555,28 @@ vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, TSInstructi
 }
 
 const vector<Definition> instructionDefinitionVector = {
-    {{0xAF},    Instruction::SCASD, {},                             onlyOpcodeComputeFunc},
+    {{0x90},    Instruction::NOP,   {},                                          onlyOpcodeComputeFunc},
 
-    {{0xD0}, 2, Instruction::RCL,   {{UREG8_ANY}, {IMM8_FILL, 1}},  oneOpOpcodeWithREGComputeFunc},
-    {{0xD1}, 2, Instruction::RCL,   {{UREG32_ANY}, {IMM8_FILL, 1}}, oneOpOpcodeWithREGComputeFunc},
-    
-    {{0xF6}, 6, Instruction::DIV,   {{MEM8_ANY}},                   oneOpOpcodeWithREGComputeFunc},
-    {{0xF7}, 6, Instruction::DIV,   {{MEM32_ANY}},                  oneOpOpcodeWithREGComputeFunc},
-    
-    {{0x0A},    Instruction::OR,    {{UREG8_ANY}, {UREG8_ANY}},     twoOpsClassicComputeFunc<false>},
-    {{0x0B},    Instruction::OR,    {{UREG32_ANY}, {UREG32_ANY}},   twoOpsClassicComputeFunc<false>},
-    
-    {{0x3A},    Instruction::CMP,   {{UREG8_ANY}, {MEM8_ANY}},      twoOpsClassicComputeFunc<false>},
-    {{0x3B},    Instruction::CMP,   {{UREG32_ANY}, {MEM32_ANY}},    twoOpsClassicComputeFunc<false>},
+    {{0xD0}, 4, Instruction::SHL,   {{UREG8_ANY}, {IMM8_FILL, 1}},               oneOpOpcodeWithREGComputeFunc},
+    {{0xD1}, 4, Instruction::SHL,   {{UREG16_ANY | UREG32_ANY}, {IMM8_FILL, 1}}, oneOpOpcodeWithREGComputeFunc},
 
-    {{0x20},    Instruction::AND,   {{MEM8_ANY}, {UREG8_ANY}},      twoOpsClassicComputeFunc<true>},
-    {{0x21},    Instruction::AND,   {{MEM32_ANY}, {UREG32_ANY}},    twoOpsClassicComputeFunc<true>},
+    {{0xF6}, 2, Instruction::NOT,   {{MEM8_ANY}},                                oneOpOpcodeWithREGComputeFunc},
+    {{0xF7}, 2, Instruction::NOT,   {{MEM16_ANY | MEM32_ANY}},                   oneOpOpcodeWithREGComputeFunc},
 
-    {{0xC6}, 0, Instruction::MOV,   {{MEM8_ANY}, {IMM8_FILL}},      twoOpsOpcodeWithREGAndIMMComputeFunc},
-    {{0xC7}, 0, Instruction::MOV,   {{MEM32_ANY}, {IMM32_FILL}},    twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0x02},    Instruction::ADD,   {{UREG8_ANY}, {MEM8_ANY}},                   twoOpsClassicComputeFunc<false>},
+    {{0x03},    Instruction::ADD,   {{UREG16_ANY}, {MEM16_ANY}},                 twoOpsClassicComputeFunc<false>},
+    {{0x03},    Instruction::ADD,   {{UREG32_ANY}, {MEM32_ANY}},                 twoOpsClassicComputeFunc<false>},
 
-    {{0x80}, 0, Instruction::ADD,   {{UREG8_ANY}, {IMM8_FILL}},     twoOpsOpcodeWithREGAndIMMComputeFunc},
-    {{0x81}, 0, Instruction::ADD,   {{UREG32_ANY}, {IMM32_FILL}},   twoOpsOpcodeWithREGAndIMMComputeFunc},
-    {{0x83}, 0, Instruction::ADD,   {{UREG32_ANY}, {IMM8_FILL}},    twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0x28},    Instruction::SUB,   {{MEM8_ANY}, {UREG8_ANY}},                   twoOpsClassicComputeFunc<true>},
+    {{0x29},    Instruction::SUB,   {{MEM16_ANY}, {UREG16_ANY}},                 twoOpsClassicComputeFunc<true>},
+    {{0x29},    Instruction::SUB,   {{MEM32_ANY}, {UREG32_ANY}},                 twoOpsClassicComputeFunc<true>},
 
-    {{0x73},    Instruction::JNB,   {{REL8_FILL}},                  relativeJumpComputeFunc}
+    {{0x72},    Instruction::JC,    {{REL8_FILL}},                               relativeJumpComputeFunc}
 };
 
 }
 
-size_t getInstructionBytePresentSize(const vector<vector<uchar>> &instructionBytePresent)
-{
+size_t getInstructionBytePresentSize(const vector<vector<uchar>> &instructionBytePresent) {
     size_t res = 0;
 
     for (auto it = instructionBytePresent.begin(); it != instructionBytePresent.end(); ++it)

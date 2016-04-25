@@ -4,11 +4,9 @@
 #include "TSGlobal.h"
 #include "TSInteger.h"
 
-namespace TSOperandMask
-{
+namespace TSOperandMask {
 
-enum : unsigned long long
-{
+enum : unsigned long long {
     UREG                    = 1ull << 0,
     MEM                     = 1ull << 1,
     IMM                     = 1ull << 2,
@@ -54,14 +52,14 @@ enum : unsigned long long
     OPVAL6                  = 1ull << 54,
     OPVAL7                  = 1ull << 55,
     OPVAL_ANY               = OPVAL0 | OPVAL1 | OPVAL2 | OPVAL3 | OPVAL4 | OPVAL5 | OPVAL6 | OPVAL7,
-    OPVAL8                  = (OPVAL0 << 8),
-    OPVAL9                  = (OPVAL1 << 8),
-    OPVAL10                 = (OPVAL2 << 8),
-    OPVAL11                 = (OPVAL3 << 8),
-    OPVAL12                 = (OPVAL4 << 8),
-    OPVAL13                 = (OPVAL5 << 8),
-    OPVAL14                 = (OPVAL6 << 8),
-    OPVAL15                 = (OPVAL7 << 8),
+    OPVAL8                  = OPVAL0 << 8,
+    OPVAL9                  = OPVAL1 << 8,
+    OPVAL10                 = OPVAL2 << 8,
+    OPVAL11                 = OPVAL3 << 8,
+    OPVAL12                 = OPVAL4 << 8,
+    OPVAL13                 = OPVAL5 << 8,
+    OPVAL14                 = OPVAL6 << 8,
+    OPVAL15                 = OPVAL7 << 8,
     OPVAL_SECOND_ANY        = OPVAL8 | OPVAL9 | OPVAL10 | OPVAL11 | OPVAL12 | OPVAL13 | OPVAL14 | OPVAL15,
     OPVAL_WHOLE_ANY         = OPVAL_ANY | OPVAL_SECOND_ANY,
 
@@ -156,8 +154,7 @@ enum : unsigned long long
     REL32_FILL              = REL16_FILL | REL32
 };
 
-class Mask : public bitset<64>
-{
+class Mask : public bitset<64> {
 public:
     constexpr Mask() noexcept :
         bitset<64>()
@@ -171,80 +168,82 @@ public:
         bitset<64>(bitSet)
     {}
 
-    inline Mask &operator&=(const Mask &mask) noexcept
-    {
+    inline Mask &operator&=(const Mask &mask) noexcept {
         bitset<64>::operator&=(mask);
 
         return *this;
     }
 
-    inline Mask &operator|=(const Mask &mask) noexcept
-    {
+    inline Mask &operator|=(const Mask &mask) noexcept {
         bitset<64>::operator|=(mask);
 
         return *this;
     }
 
-    inline Mask &operator^=(const Mask &mask) noexcept
-    {
+    inline Mask &operator^=(const Mask &mask) noexcept {
         bitset<64>::operator^=(mask);
 
         return *this;
     }
 
-    inline Mask &operator<<=(size_t pos) noexcept
-    {
+    inline Mask &operator<<=(size_t pos) noexcept {
         bitset<64>::operator<<=(pos);
 
         return *this;
     }
 
-    inline Mask &operator>>=(size_t pos) noexcept
-    {
+    inline Mask &operator>>=(size_t pos) noexcept {
         bitset<64>::operator>>=(pos);
 
         return *this;
     }
 
-    inline Mask operator~() const noexcept
-    {
+    inline Mask operator~() const noexcept {
         return bitset<64>::operator~();
     }
 
-    inline Mask operator<<(size_t pos) const noexcept
-    {
+    inline Mask operator<<(size_t pos) const noexcept {
         return bitset<64>::operator<<(pos);
     }
 
-    inline Mask operator>>(size_t pos) const noexcept
-    {
+    inline Mask operator>>(size_t pos) const noexcept {
         return bitset<64>::operator>>(pos);
     }
 
-    inline bool operator==(const Mask &mask) const noexcept
-    {
+    inline bool operator==(const Mask &mask) const noexcept {
         return bitset<64>::operator==(mask);
     }
 
-    inline bool operator!=(const Mask &mask) const noexcept
-    {
+    inline bool operator!=(const Mask &mask) const noexcept {
         return bitset<64>::operator!=(mask);
     }
 
-    inline bool match(Mask mask) const
-    {
+    inline bool operator<(const Mask &mask) const noexcept {
+        return bitset<64>::to_ullong() < mask.to_ullong();
+    }
+
+    inline bool operator<=(const Mask &mask) const noexcept {
+        return bitset<64>::to_ullong() <= mask.to_ullong();
+    }
+
+    inline bool operator>(const Mask &mask) const noexcept {
+        return bitset<64>::to_ullong() > mask.to_ullong();
+    }
+
+    inline bool operator>=(const Mask &mask) const noexcept {
+        return bitset<64>::to_ullong() >= mask.to_ullong();
+    }
+
+    inline bool match(Mask mask) const {
         return !((*this & mask) ^ mask).any();
     }
 
-    inline bool matchAny(Mask mask) const
-    {
+    inline bool matchAny(Mask mask) const {
         return (*this & mask).any();
     }
 
-    static inline Mask operandSizeFromIntegerSize(TSInteger::Size size)
-    {
-        switch (size)
-        {
+    static inline Mask operandSizeFromIntegerSize(TSInteger::Size size) {
+        switch (size) {
         case TSInteger::Size::S_8:
             return S8;
         case TSInteger::Size::S_16:
@@ -256,8 +255,7 @@ public:
         }
     }
 
-    static inline TSInteger::Size integerSizeFromOperandSize(Mask mask)
-    {
+    static inline TSInteger::Size integerSizeFromOperandSize(Mask mask) {
         if (mask.match(S8))
             return TSInteger::Size::S_8;
         else if (mask.match(S16))
@@ -269,18 +267,15 @@ public:
     }
 };
 
-inline Mask operator&(const Mask &mask1, const Mask &mask2)
-{
+inline Mask operator&(const Mask &mask1, const Mask &mask2) {
     return bitset<64>(mask1) & bitset<64>(mask2);
 }
 
-inline Mask operator|(const Mask &mask1, const Mask &mask2)
-{
+inline Mask operator|(const Mask &mask1, const Mask &mask2) {
     return bitset<64>(mask1) | bitset<64>(mask2);
 }
 
-inline Mask operator^(const Mask &mask1, const Mask &mask2)
-{
+inline Mask operator^(const Mask &mask1, const Mask &mask2) {
     return bitset<64>(mask1) ^ bitset<64>(mask2);
 }
 

@@ -54,13 +54,12 @@ const string TSToken::colonStr = ":";
 const string TSToken::sizeOperatorStr = "PTR";
 const string TSToken::equDirectiveStr = "EQU";
 const string TSToken::endDirectiveStr = "END";
+const string TSToken::assumeDirectiveStr = "ASSUME";
 
-vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector)
-{
+vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector) {
     vector<TSTokenContainer> tokenContainerVector;
 
-    for (auto it = lexemeContainerVector.begin(); it != lexemeContainerVector.end(); ++it)
-    {
+    for (auto it = lexemeContainerVector.begin(); it != lexemeContainerVector.end(); ++it) {
         const TSLexemeContainer &lexemeContainer = *it;
         const string &lexeme = lexemeContainer.lexeme;
         
@@ -76,6 +75,8 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
             currentToken = TSToken(TSToken::Type::EQU_DIRECTIVE);
         else if (lexeme == TSToken::endDirectiveStr)
             currentToken = TSToken(TSToken::Type::END_DIRECTIVE);
+        else if (lexeme == TSToken::assumeDirectiveStr)
+            currentToken = TSToken(TSToken::Type::ASSUME_DIRECTIVE);
         else if (TSToken::memoryBracketMap.count(lexeme))
             currentToken = TSToken(TSToken::Type::MEMORY_BRACKET, TSToken::memoryBracketMap.find(lexeme)->second);
         else if (TSToken::mathSymbolMap.count(lexeme))
@@ -96,36 +97,26 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
             currentToken = TSToken(TSToken::Type::CONDITION, TSToken::conditionMap.find(lexeme)->second);
         else if (isCharQuoteCompatible(lexeme[0]))
             currentToken = TSToken(TSToken::Type::CONSTANT_STRING, lexeme.substr(1, lexeme.size() - 2));
-        else if (isCharNumberCompatible(lexeme[0]))
-        {
+        else if (isCharNumberCompatible(lexeme[0])) {
             TSInteger number;
 
-            try
-            {
+            try {
                 size_t stoiStop;
                 size_t realNumberSize;
 
-                if (isCharNumberCompatible(lexeme[lexeme.size() - 1]))
-                {
+                if (isCharNumberCompatible(lexeme[lexeme.size() - 1])) {
                     number = std::stoull(lexeme, &stoiStop, 10);
                     realNumberSize = lexeme.size();
-                }
-                else if (lexeme[lexeme.size() - 1] == 'D')
-                {
+                } else if (lexeme[lexeme.size() - 1] == 'D') {
                     number = std::stoull(lexeme, &stoiStop, 10);
                     realNumberSize = lexeme.size() - 1;
-                }
-                else if (lexeme[lexeme.size() - 1] == 'B')
-                {
+                } else if (lexeme[lexeme.size() - 1] == 'B') {
                     number = std::stoull(lexeme, &stoiStop, 2);
                     realNumberSize = lexeme.size() - 1;
-                }
-                else if (lexeme[lexeme.size() - 1] == 'H')
-                {
+                } else if (lexeme[lexeme.size() - 1] == 'H') {
                     number = std::stoull(lexeme, &stoiStop, 16);
                     realNumberSize = lexeme.size() - 1;
-                }
-                else
+                } else
                     throw TSCompileError("Invalid numeric constant", {lexemeContainer.row,
                                                                       lexemeContainer.column,
                                                                       lexeme.size()});
@@ -134,17 +125,14 @@ vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer>
                     throw TSCompileError("Invalid numeric constant", {lexemeContainer.row,
                                                                       lexemeContainer.column,
                                                                       lexeme.size()});
-            }
-            catch (std::exception &e)
-            {
+            } catch (std::exception &e) {
                 throw TSCompileError("Invalid numeric constant", {lexemeContainer.row,
                                                                   lexemeContainer.column,
                                                                   lexeme.size()});
             }
 
             currentToken = TSToken(TSToken::Type::CONSTANT_NUMBER, number);
-        }
-        else
+        } else
             currentToken = TSToken(TSToken::Type::USER_IDENTIFIER, lexeme);
 
         tokenContainerVector.push_back({{it->row,

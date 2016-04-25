@@ -10,50 +10,43 @@
 #include "TSSentence.h"
 #include <fstream>
 
-const TSCompiler::Arch TSCompiler::arch = Arch::X86_32;
+const TSCompiler::Arch TSCompiler::arch = Arch::X86_16;
 
-TSCompiler::TSCompiler()
-{}
+TSCompiler::TSCompiler() {
+}
 
-void TSCompiler::compile(const string &sourceFilePath, const string &resultFilePath) const
-{
-    try
-    {
+void TSCompiler::compile(const string &sourceFilePath) const {
+    try {
         std::ifstream sourceFile(sourceFilePath);
         if (!sourceFile.is_open())
             throw TSException(string("File \'") + sourceFilePath + "\' not found, or permission denied");
 
         string sourceFileContents((std::istreambuf_iterator<char>(sourceFile)), std::istreambuf_iterator<char>());
 
-        try
-        {
+        try {
             auto phase1 = constructLexemeContainerVector(sourceFileContents);
             auto phase2 = convertLexemeContainerVectorToUpperCase(phase1);
             auto phase3 = constructTokenContainerVector(phase2);
+            //printTokenTable(phase3, phase2); //LEXICAL ANALYZER
             auto phase4 = preprocess(phase3);
-            auto phase5 = splitPseudoSentences(phase4);
+            auto phase5 = splitPseudoSentences(get<0>(phase4));
             auto phase6 = constructRawSentences(get<0>(phase5), get<1>(phase5));
+            //printRawSentenceTable(phase6, get<1>(phase5), true); //SYNTATICAL ANALYZER
             auto phase7 = constructSentences(phase6);
-            printListing(phase7, phase5);
-        }
-        catch (TSCompileError &e)
-        {
+            printListing(phase7, phase5); //LISTING
+        } catch (TSCompileError &e) {
             printCompileError(e.what(), sourceFileContents, e.pos());
         }
-    }
-    catch (std::exception &e)
-    {
+    } catch (std::exception &e) {
         printError(e.what());
     }
 }
 
-TSCompiler &TSCompiler::instance()
-{
+TSCompiler &TSCompiler::instance() {
     static TSCompiler compiler;
     return compiler;
 }
 
-void TSCompile(const string &sourceFilePath, const string &resultFilePath)
-{
-    TSCompiler::instance().compile(sourceFilePath, resultFilePath);
+void TSCompile(const string &sourceFilePath) {
+    TSCompiler::instance().compile(sourceFilePath);
 }

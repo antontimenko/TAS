@@ -7,8 +7,7 @@
 #include "TSMath.h"
 #include <exception>
 
-class TSException : public std::exception
-{
+class TSException : public std::exception {
 public:
     TSException(string text);
     virtual const char *what() const noexcept;
@@ -16,8 +15,7 @@ protected:
     string text;
 };
 
-class TSCompileError : public TSException
-{
+class TSCompileError : public TSException {
 public: 
     TSCompileError(string text, TSCodePosition pos);
     virtual const TSCodePosition &pos() const;

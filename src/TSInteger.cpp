@@ -10,8 +10,7 @@ constexpr TSInt TSInt_MIN = std::numeric_limits<TSInt>::min();
 constexpr TSInt TSInt_MAX = std::numeric_limits<TSInt>::max();
 constexpr TSUInt TSUInt_MAX = std::numeric_limits<TSUInt>::max();
 
-bool TSInteger::operator==(const TSInteger &num) const
-{
+bool TSInteger::operator==(const TSInteger &num) const {
     if (isSigned && num.isSigned)
         return (TSInt)val == (TSInt)num.val;
     else if (!isSigned && num.isSigned)
@@ -22,8 +21,7 @@ bool TSInteger::operator==(const TSInteger &num) const
         return (TSUInt)val == (TSUInt)num.val;
 }
 
-bool TSInteger::operator!=(const TSInteger &num) const
-{
+bool TSInteger::operator!=(const TSInteger &num) const {
     if (isSigned && num.isSigned)
         return (TSInt)val != (TSInt)num.val;
     else if (!isSigned && num.isSigned)
@@ -34,8 +32,7 @@ bool TSInteger::operator!=(const TSInteger &num) const
         return (TSUInt)val != (TSUInt)num.val;
 }
 
-bool TSInteger::operator<(const TSInteger &num) const
-{
+bool TSInteger::operator<(const TSInteger &num) const {
     if (isSigned && num.isSigned)
         return (TSInt)val < (TSInt)num.val;
     else if (!isSigned && num.isSigned)
@@ -46,8 +43,7 @@ bool TSInteger::operator<(const TSInteger &num) const
         return (TSUInt)val < (TSUInt)num.val;
 }
 
-bool TSInteger::operator>(const TSInteger &num) const
-{
+bool TSInteger::operator>(const TSInteger &num) const {
     if (isSigned && num.isSigned)
         return (TSInt)val > (TSInt)num.val;
     else if (!isSigned && num.isSigned)
@@ -58,8 +54,7 @@ bool TSInteger::operator>(const TSInteger &num) const
         return (TSUInt)val > (TSUInt)num.val;
 }
 
-bool TSInteger::operator<=(const TSInteger &num) const
-{
+bool TSInteger::operator<=(const TSInteger &num) const {
     if (isSigned && num.isSigned)
         return (TSInt)val <= (TSInt)num.val;
     else if (!isSigned && num.isSigned)
@@ -70,8 +65,7 @@ bool TSInteger::operator<=(const TSInteger &num) const
         return (TSUInt)val <= (TSUInt)num.val;
 }
 
-bool TSInteger::operator>=(const TSInteger &num) const
-{
+bool TSInteger::operator>=(const TSInteger &num) const {
     if (isSigned && num.isSigned)
         return (TSInt)val >= (TSInt)num.val;
     else if (!isSigned && num.isSigned)
@@ -82,12 +76,9 @@ bool TSInteger::operator>=(const TSInteger &num) const
         return (TSUInt)val >= (TSUInt)num.val;
 }
 
-TSInteger TSInteger::operator+(const TSInteger &num) const
-{
-    if (isSigned && ((TSInt)val < 0))
-    {
-        if (num.isSigned && ((TSInt)num.val < 0))
-        {
+TSInteger TSInteger::operator+(const TSInteger &num) const {
+    if (isSigned && ((TSInt)val < 0)) {
+        if (num.isSigned && ((TSInt)num.val < 0)) {
             if ((TSInt_MIN - (TSInt)num.val) > (TSInt)val)
                 throw std::overflow_error("overflow (too low)");
 
@@ -97,78 +88,59 @@ TSInteger TSInteger::operator+(const TSInteger &num) const
             return (TSUInt)num.val - (TSUInt)(-(TSInt)val);
         else
             return (TSInt)val + (TSInt)num.val;
-    }
-    else if (!isSigned && ((TSUInt)val > TSInt_MAX))
-    {
+    } else if (!isSigned && ((TSUInt)val > TSInt_MAX)) {
         if (num.isSigned && ((TSInt)num.val < 0))
             return (TSUInt)val - (TSUInt)(-(TSInt)num.val);
         else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX))
             throw std::overflow_error("overflow (too high)");
-        else
-        {
+        else {
             if ((TSUInt_MAX - (TSUInt)num.val) < (TSUInt)val)
                 throw std::overflow_error("overflow (too high)");
 
             return (TSUInt)val + (TSUInt)num.val;
         }
-    }
-    else
-    {
+    } else {
         if (num.isSigned && ((TSInt)num.val < 0))
             return (TSInt)val + (TSInt)num.val;
-        else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX))
-        {
+        else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX)) {
             if ((TSUInt_MAX - (TSUInt)num.val) < (TSUInt)val)
                 throw std::overflow_error("overflow (too high)");
 
             return (TSUInt)val + (TSUInt)num.val;
-        }
-        else
+        } else
             return (TSUInt)val + (TSUInt)num.val;
     }
 }
 
-TSInteger TSInteger::operator-(const TSInteger &num) const
-{
-    if (isSigned && ((TSInt)val < 0))
-    {
+TSInteger TSInteger::operator-(const TSInteger &num) const {
+    if (isSigned && ((TSInt)val < 0)) {
         if (num.isSigned && ((TSInt)num.val < 0))
             return (TSInt)val - (TSInt)num.val;
         else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX))
             throw std::overflow_error("overflow (too low)");
-        else
-        {
+        else {
             if ((TSInt_MIN + (TSInt)num.val) > (TSInt)val)
                 throw std::overflow_error("overflow (too low)");
 
             return (TSInt)val - (TSInt)num.val;
         }
-    }
-    else if (!isSigned && ((TSUInt)val > TSInt_MAX))
-    {
-        if (num.isSigned && ((TSInt)num.val < 0))
-        {
+    } else if (!isSigned && ((TSUInt)val > TSInt_MAX)) {
+        if (num.isSigned && ((TSInt)num.val < 0)) {
             if ((TSUInt_MAX - (TSUInt)(-(TSInt)num.val)) < (TSUInt)val)
                 throw std::overflow_error("overflow (too high)");
 
             return (TSUInt)val + (TSUInt)(-(TSInt)num.val);
-        }
-        else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX))
-        {
+        } else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX)) {
             if ((TSUInt)val > (TSUInt)num.val)
                 return (TSInt)((TSUInt)val - (TSUInt)num.val);
             else
                 return -(TSInt)((TSUInt)num.val - (TSUInt)val);
-        }
-        else
+        } else
             return (TSUInt)val - (TSUInt)num.val;
-    }
-    else
-    {
+    } else {
         if (num.isSigned && ((TSInt)num.val < 0))
             return (TSUInt)val + (TSUInt)(-(TSInt)num.val);
-        else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX))
-        {
+        else if (!num.isSigned && ((TSUInt)num.val > TSInt_MAX)) {
             if ((TSUInt)(-TSInt_MIN) < ((TSUInt)num.val - (TSUInt)val))
                 throw std::overflow_error("overflow (too low)");
 
@@ -179,21 +151,18 @@ TSInteger TSInteger::operator-(const TSInteger &num) const
     }
 }
 
-TSInteger TSInteger::operator+() const
-{
+TSInteger TSInteger::operator+() const {
     return *this;
 }
 
-TSInteger TSInteger::operator-() const
-{
+TSInteger TSInteger::operator-() const {
     if (!isSigned && ((TSUInt)val > (TSUInt)(-TSInt_MIN)))
         throw std::overflow_error("overflow (too big to negate)");
 
     return -(TSInt)val;
 }
 
-TSInteger TSInteger::operator*(const TSInteger &num) const
-{
+TSInteger TSInteger::operator*(const TSInteger &num) const {
     bool isResultNegative = (isSigned && ((TSInt)val < 0)) != (num.isSigned && ((TSInt)num.val < 0));
 
     TSUInt mult1 = isSigned ? (TSUInt)llabs((TSInt)val) : (TSUInt)val;
@@ -204,19 +173,16 @@ TSInteger TSInteger::operator*(const TSInteger &num) const
     if ((mult1 != 0) && ((res / mult1) != mult2))
         throw std::overflow_error("overflow (too large multipliers)");
 
-    if (isResultNegative)
-    {
+    if (isResultNegative) {
         if (res > (TSUInt)(-TSInt_MIN))
             throw std::overflow_error("overflow (too large multipliers)");
 
         return -(TSInt)res;
-    }
-    else
+    } else
         return (TSUInt)res;
 }
 
-TSInteger TSInteger::operator/(const TSInteger &num) const
-{
+TSInteger TSInteger::operator/(const TSInteger &num) const {
     bool isResultNegative = (isSigned && ((TSInt)val < 0)) != (num.isSigned && ((TSInt)num.val < 0));
 
     TSUInt div1 = isSigned ? (TSUInt)llabs((TSInt)val) : (TSUInt)val;
@@ -227,19 +193,16 @@ TSInteger TSInteger::operator/(const TSInteger &num) const
 
     TSUInt res = div1 / div2;
 
-    if (isResultNegative)
-    {
+    if (isResultNegative) {
         if (res > (TSUInt)(-TSInt_MIN))
             throw std::overflow_error("overflow (too large divident)");
 
         return -(TSInt)res;
-    }
-    else
+    } else
         return (TSUInt)res;
 }
 
-std::string TSInteger::str(bool includeSign) const
-{
+std::string TSInteger::str(bool includeSign) const {
     std::string str =  isSigned ? std::to_string((TSInt)val) : std::to_string((TSUInt)val);
 
     if (includeSign && (*this > 0))
@@ -248,8 +211,7 @@ std::string TSInteger::str(bool includeSign) const
     return str;
 }
 
-optional<TSInteger::Size> TSInteger::sizeSigned() const
-{
+optional<TSInteger::Size> TSInteger::sizeSigned() const {
     if ((*this >= INT8_MIN) && (*this <= INT8_MAX))
         return Size::S_8;
     else if ((*this >= INT16_MIN) && (*this <= INT16_MAX))
@@ -262,8 +224,7 @@ optional<TSInteger::Size> TSInteger::sizeSigned() const
         return nullopt;
 }
 
-optional<TSInteger::Size> TSInteger::sizeUnsigned() const
-{
+optional<TSInteger::Size> TSInteger::sizeUnsigned() const {
     if ((*this >= 0) && (*this <= UINT8_MAX))
         return Size::S_8;
     else if ((*this >= 0) && (*this <= UINT16_MAX))
@@ -276,8 +237,7 @@ optional<TSInteger::Size> TSInteger::sizeUnsigned() const
         return nullopt;
 }
 
-TSInteger::Size TSInteger::sizeAny() const
-{
+TSInteger::Size TSInteger::sizeAny() const {
     if ((*this >= INT8_MIN) && (*this <= UINT8_MAX))
         return Size::S_8;
     else if ((*this >= INT16_MIN) && (*this <= UINT16_MAX))
@@ -291,36 +251,28 @@ TSInteger::Size TSInteger::sizeAny() const
 using std::vector;
 typedef unsigned char uchar;
 
-vector<uchar> TSInteger::getCharArraySigned(Size size) const
-{
+vector<uchar> TSInteger::getCharArraySigned(Size size) const {
     vector<uchar> res;
 
-    if (size == Size::S_8)
-    {
+    if (size == Size::S_8) {
         int8_t vecVal = (int8_t)val;
         uchar *p = (uchar *)&vecVal;
 
         for (size_t i = 0; i < sizeof(int8_t); ++i)
             res.push_back(p[i]);
-    }
-    else if (size == Size::S_16)
-    {
+    } else if (size == Size::S_16) {
         int16_t vecVal = (int16_t)val;
         uchar *p = (uchar *)&vecVal;
 
         for (size_t i = 0; i < sizeof(int16_t); ++i)
             res.push_back(p[i]);
-    }
-    else if (size == Size::S_32)
-    {
+    } else if (size == Size::S_32) {
         int32_t vecVal = (int32_t)val;
         uchar *p = (uchar *)&vecVal;
 
         for (size_t i = 0; i < sizeof(int32_t); ++i)
             res.push_back(p[i]);
-    }
-    else
-    {
+    } else {
         int64_t vecVal = (int64_t)val;
         uchar *p = (uchar *)&vecVal;
 
@@ -331,36 +283,28 @@ vector<uchar> TSInteger::getCharArraySigned(Size size) const
     return res;
 }
 
-vector<uchar> TSInteger::getCharArrayUnsigned(Size size) const
-{
+vector<uchar> TSInteger::getCharArrayUnsigned(Size size) const {
     vector<uchar> res;
 
-    if (size == Size::S_8)
-    {
+    if (size == Size::S_8) {
         uint8_t vecVal = (uint8_t)val;
         uchar *p = (uchar *)&vecVal;
 
         for (size_t i = 0; i < sizeof(uint8_t); ++i)
             res.push_back(p[i]);
-    }
-    else if (size == Size::S_16)
-    {
+    } else if (size == Size::S_16) {
         uint16_t vecVal = (uint16_t)val;
         uchar *p = (uchar *)&vecVal;
 
         for (size_t i = 0; i < sizeof(uint16_t); ++i)
             res.push_back(p[i]);
-    }
-    else if (size == Size::S_32)
-    {
+    } else if (size == Size::S_32) {
         uint32_t vecVal = (uint32_t)val;
         uchar *p = (uchar *)&vecVal;
 
         for (size_t i = 0; i < sizeof(uint32_t); ++i)
             res.push_back(p[i]);
-    }
-    else
-    {
+    } else {
         uint64_t vecVal = (uint64_t)val;
         uchar *p = (uchar *)&vecVal;
 
@@ -371,15 +315,12 @@ vector<uchar> TSInteger::getCharArrayUnsigned(Size size) const
     return res;
 }
 
-vector<uchar> TSInteger::getCharArrayAny(Size size) const
-{
+vector<uchar> TSInteger::getCharArrayAny(Size size) const {
     return getCharArrayUnsigned(size);
 }
 
-TSInteger TSInteger::getMaxValSigned(Size size)
-{
-    switch (size)
-    {
+TSInteger TSInteger::getMaxValSigned(Size size) {
+    switch (size) {
     case Size::S_8:
         return INT8_MAX;
     case Size::S_16:
@@ -391,10 +332,8 @@ TSInteger TSInteger::getMaxValSigned(Size size)
     }
 }
 
-TSInteger TSInteger::getMaxValUnsigned(Size size)
-{
-    switch (size)
-    {
+TSInteger TSInteger::getMaxValUnsigned(Size size) {
+    switch (size) {
     case Size::S_8:
         return UINT8_MAX;
     case Size::S_16:
@@ -406,15 +345,12 @@ TSInteger TSInteger::getMaxValUnsigned(Size size)
     }
 }
 
-TSInteger TSInteger::getMaxValAny(Size size)
-{
+TSInteger TSInteger::getMaxValAny(Size size) {
     return getMaxValUnsigned(size);
 }
 
-TSInteger::Size TSInteger::nextSize(Size size)
-{
-    switch (size)
-    {
+TSInteger::Size TSInteger::nextSize(Size size) {
+    switch (size) {
     case Size::S_8:
         return Size::S_16;
     case Size::S_16:

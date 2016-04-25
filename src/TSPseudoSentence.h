@@ -6,32 +6,46 @@
 #include "TSPreprocessor.h"
 #include "TSMath.h"
 #include "TSInstruction.h"
+#include "TSOperandMask.h"
 
-struct TSPseudoSentence
-{
-    TSTokenContainer baseTokenContainer;
-    vector<vector<TSTokenContainer>> operandsTokenContainerVector;
+class TSAssume {
+public:
+    inline void setSegment(string segName, TSOperandMask::Mask segReg) {
+        assumeMap[segName] = segReg;
+    }
+    
+    inline map<string, TSOperandMask::Mask> getMap() const {
+        return assumeMap;
+    }
+private:
+    map<string, TSOperandMask::Mask> assumeMap;
 };
 
-typedef tuple<string, vector<TSPseudoSentence>> TSPseudoSentencesSegmentContainer;
+struct TSPseudoSentence {
+    TSTokenContainer baseTokenContainer;
+    vector<vector<TSTokenContainer>> operandsTokenContainerVector;
+    TSAssume assume;
+};
 
-class TSLabel
-{
+struct TSPseudoSentencesSegment {
+    string segName;
+    vector<TSPseudoSentence> pseudoSentences;
+};
+
+class TSLabel {
 public:
     optional<TSToken::DataIdentifier> dataIdentifier;
     size_t ptr;
     string segName;
 
-    inline bool operator==(const TSLabel &label) const
-    {
+    inline bool operator==(const TSLabel &label) const {
         return (dataIdentifier == label.dataIdentifier) &&
                (ptr == label.ptr) &&
                (segName == label.segName);
     }
 };
 
-class TSLabelFinder
-{
+class TSLabelFinder {
 public:
     inline TSLabelFinder(TSLabel label) :
         label(label)
@@ -39,14 +53,11 @@ public:
 
     const TSLabel label;
 
-    inline bool operator()(const pair<string, TSLabel> &labelPair) const
-    {
+    inline bool operator()(const pair<string, TSLabel> &labelPair) const {
         return label == labelPair.second;
     }
 };
 
-typedef tuple<vector<TSPseudoSentencesSegmentContainer>, map<string, TSLabel>> TSPseudoSentenceSplitType;
-
-TSPseudoSentenceSplitType splitPseudoSentences(const vector<TSTokenContainersSegmentContainer> &segmentTokenContainerVector);
+tuple<vector<TSPseudoSentencesSegment>, map<string, TSLabel>> splitPseudoSentences(const vector<TSTokenSegment> &segmentTokenContainerVector);
 
 #endif

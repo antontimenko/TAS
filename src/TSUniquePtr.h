@@ -9,20 +9,17 @@ template<typename T>
 class TSUniquePtr;
 
 template<typename T, typename U>
-void defaultDeleter(T *ptr)
-{
+void defaultDeleter(T *ptr) {
     delete static_cast<U *>(ptr);
 }
 
 template<typename T, typename U>
-TSUniquePtr<T> defaultCopier(T *ptr)
-{
+TSUniquePtr<T> defaultCopier(T *ptr) {
     return TSUniquePtr<T>(new U(*static_cast<U *>(ptr)));
 }
 
 template<typename T>
-class TSUniquePtr : public std::unique_ptr<T, void(*)(T *)>
-{
+class TSUniquePtr : public std::unique_ptr<T, void(*)(T *)> {
 public:
     constexpr TSUniquePtr() :
         std::unique_ptr<T, void(*)(T *)>()
@@ -42,16 +39,14 @@ public:
 
     TSUniquePtr &operator=(const TSUniquePtr &ptr) = delete;
     
-    inline TSUniquePtr &operator=(TSUniquePtr &&ptr)
-    {
+    inline TSUniquePtr &operator=(TSUniquePtr &&ptr) {
         std::unique_ptr<T, void(*)(T *)>::operator=(std::move(ptr));
         copier = std::move(ptr.copier);
 
         return *this;
     }
 
-    inline TSUniquePtr<T> copy() const
-    {
+    inline TSUniquePtr<T> copy() const {
         return copier(this->get());
     }
     

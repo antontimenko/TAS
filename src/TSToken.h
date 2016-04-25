@@ -7,11 +7,9 @@
 #include "TSUniquePtr.h"
 #include "TSInstruction.h"
 
-class TSToken
-{
+class TSToken {
 public:
-    enum class Type
-    {
+    enum class Type {
         USER_IDENTIFIER,
         MEMORY_BRACKET,
         MATH_SYMBOL,
@@ -28,17 +26,16 @@ public:
         CONDITION,
         SIZE_OPERATOR,
         EQU_DIRECTIVE,
-        END_DIRECTIVE
+        END_DIRECTIVE,
+        ASSUME_DIRECTIVE
     };
 
-    enum class MemoryBracket
-    {
+    enum class MemoryBracket {
         OPEN,
         CLOSE
     };
 
-    enum class MathSymbol
-    {
+    enum class MathSymbol {
         PLUS,
         MINUS,
         MULTIPLY,
@@ -47,8 +44,7 @@ public:
         BRACKET_CLOSE
     };
 
-    enum class SegmentDirective
-    {
+    enum class SegmentDirective {
         SEGMENT,
         ENDS
     };
@@ -57,8 +53,7 @@ public:
 
     typedef TSOperandMask::Mask Register;
 
-    enum class SizeIdentifier
-    {
+    enum class SizeIdentifier {
         BYTE,
         WORD,
         DWORD
@@ -66,15 +61,13 @@ public:
 
     typedef TSInstruction::DataIdentifier DataIdentifier;
 
-    enum class ConditionDirective
-    {
+    enum class ConditionDirective {
         IF,
         ELSE,
         ENDIF
     };
 
-    enum class Condition
-    {
+    enum class Condition {
         EQ,
         NE,
         LT,
@@ -102,22 +95,19 @@ public:
         valueP(token.valueP.copy())
     {}
 
-    inline TSToken &operator=(const TSToken &token)
-    {
+    inline TSToken &operator=(const TSToken &token) {
         _type = token._type;
         valueP = token.valueP.copy();
 
         return *this;
     }
 
-    inline Type type() const
-    {
+    inline Type type() const {
         return _type;
     }
 
     template<typename T>
-    inline T value() const
-    {
+    inline T value() const {
         return *static_cast<T *>(valueP.get());
     }
     
@@ -135,18 +125,17 @@ public:
     static const string sizeOperatorStr;
     static const string equDirectiveStr;
     static const string endDirectiveStr;
+    static const string assumeDirectiveStr;
 private:
     Type _type;
     TSUniquePtr<void> valueP;
 };
 
-class TSTokenContainer
-{
+class TSTokenContainer {
 public:
     TSCodePosition pos;
     TSToken token;
-    inline bool operator==(const TSTokenContainer &tokenContainer) const
-    {
+    inline bool operator==(const TSTokenContainer &tokenContainer) const {
         return pos == tokenContainer.pos;
     }
 };

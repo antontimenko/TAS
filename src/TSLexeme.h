@@ -12,8 +12,7 @@ bool isCharSingleCharacterLexemeCompatible(char ch);
 bool isCharLexemeDistributorCompatible(char ch);
 bool isCharQuoteCompatible(char ch);
 
-struct TSLexemeContainer
-{
+struct TSLexemeContainer {
     const size_t row;
     const size_t column;
     const string lexeme;

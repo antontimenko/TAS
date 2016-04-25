@@ -5,8 +5,7 @@
 #include "TSCodePosition.h"
 #include "TSInteger.h"
 
-enum TSMathOperationKind
-{
+enum TSMathOperationKind {
     ADD,
     SUBTRACT,
     MULTIPLY,
@@ -16,8 +15,7 @@ enum TSMathOperationKind
     BRACKET_CLOSE
 };
 
-struct TSMathOperation
-{
+struct TSMathOperation {
     TSMathOperationKind kind;
     TSInteger value;
     TSCodePosition pos;
