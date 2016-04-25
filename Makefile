@@ -3,18 +3,18 @@ CXXFLAGS=-std=c++14 -Wall -Wextra -pedantic
 LIBS=
 SOURCES= \
 	main.cpp \
-	TSInteger.cpp \
-	TSCompiler.cpp \
-	TSLexeme.cpp \
-	TSException.cpp \
-	TSToken.cpp \
-	TSDiagnostics.cpp \
-	TSPreprocessor.cpp \
-	TSMath.cpp \
-	TSPseudoSentence.cpp \
-	TSInstruction.cpp \
-	TSRawSentence.cpp \
-	TSSentence.cpp
+	Integer.cpp \
+	Compiler.cpp \
+	Lexeme.cpp \
+	Exception.cpp \
+	Token.cpp \
+	Diagnostics.cpp \
+	Preprocessor.cpp \
+	Math.cpp \
+	PseudoSentence.cpp \
+	Instruction.cpp \
+	RawSentence.cpp \
+	Sentence.cpp
 
 all: build_dir tas
 

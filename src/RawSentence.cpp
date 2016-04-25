@@ -1,79 +1,79 @@
-#include "TSRawSentence.h"
+#include "RawSentence.h"
 
-#include "TSCompiler.h"
-#include "TSPreprocessor.h"
-#include "TSMath.h"
-#include "TSException.h"
-#include "TSDiagnostics.h"
-#include "TSInstruction.h"
+#include "Compiler.h"
+#include "Preprocessor.h"
+#include "Math.h"
+#include "Exception.h"
+#include "Diagnostics.h"
+#include "Instruction.h"
 #include <utility>
 #include <algorithm>
 
-using namespace TSOperandMask;
+using namespace OperandMask;
 
-TSRawInstructionSentence::SegmentPrefix getSegmentOverridePrefix(TSToken::Register reg) {
+RawInstructionSentence::SegmentPrefix getSegmentOverridePrefix(Token::Register reg) {
     if (reg.match(ES))
-        return TSRawInstructionSentence::SegmentPrefix::ES;
+        return RawInstructionSentence::SegmentPrefix::ES;
     else if (reg.match(CS))
-        return TSRawInstructionSentence::SegmentPrefix::CS;
+        return RawInstructionSentence::SegmentPrefix::CS;
     else if (reg.match(SS))
-        return TSRawInstructionSentence::SegmentPrefix::SS;
+        return RawInstructionSentence::SegmentPrefix::SS;
     else if (reg.match(DS))
-        return TSRawInstructionSentence::SegmentPrefix::DS;
+        return RawInstructionSentence::SegmentPrefix::DS;
     else if (reg.match(FS))
-        return TSRawInstructionSentence::SegmentPrefix::FS;
+        return RawInstructionSentence::SegmentPrefix::FS;
     else
-        return TSRawInstructionSentence::SegmentPrefix::GS;
+        return RawInstructionSentence::SegmentPrefix::GS;
 }
 
-void pureMathThrowableCheck(vector<TSTokenContainer>::const_iterator begin, vector<TSTokenContainer>::const_iterator end) {
+void pureMathThrowableCheck(vector<TokenContainer>::const_iterator begin, vector<TokenContainer>::const_iterator end) {
     for (auto it = begin; it != end; ++it) {
-        if ((it->token.type() != TSToken::Type::MATH_SYMBOL) &&
-            (it->token.type() != TSToken::Type::CONSTANT_NUMBER))
+        if ((it->token.type() != Token::Type::MATH_SYMBOL) &&
+            (it->token.type() != Token::Type::CONSTANT_NUMBER))
         {
-            throw TSCompileError("unexpected token", it->pos);
+            throw CompileError("unexpected token", it->pos);
         }
     }
 };
 
-auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainerVector) {
-    vector<TSMathOperation> mathOperationVector;
+auto convertToMathOperationVector(const vector<TokenContainer> &tokenContainerVector) {
+    vector<MathOperation> mathOperationVector;
 
     for (auto it = tokenContainerVector.begin(); it != tokenContainerVector.end(); ++it) {
-        const TSTokenContainer &tokenContainer = *it;
-        const TSToken &token = tokenContainer.token;
+        const TokenContainer &tokenContainer = *it;
+        const Token &token = tokenContainer.token;
 
-        TSMathOperation currentOperation;
+        MathOperation currentOperation;
 
-        if (token.type() == TSToken::Type::MATH_SYMBOL) {
-            TSMathOperationKind currentOperationKind;
-            switch (token.value<TSToken::MathSymbol>()) {
-            case TSToken::MathSymbol::PLUS:
-                currentOperationKind = TSMathOperationKind::ADD;
+        if (token.type() == Token::Type::MATH_SYMBOL) {
+            MathOperationKind currentOperationKind;
+            switch (token.value<Token::MathSymbol>()) {
+            case Token::MathSymbol::PLUS:
+                currentOperationKind = MathOperationKind::ADD;
                 break;
-            case TSToken::MathSymbol::MINUS:
-                currentOperationKind = TSMathOperationKind::SUBTRACT;
+            case Token::MathSymbol::MINUS:
+                currentOperationKind = MathOperationKind::SUBTRACT;
                 break;
-            case TSToken::MathSymbol::MULTIPLY:
-                currentOperationKind = TSMathOperationKind::MULTIPLY;
+            case Token::MathSymbol::MULTIPLY:
+                currentOperationKind = MathOperationKind::MULTIPLY;
                 break;
-            case TSToken::MathSymbol::DIVIDE:
-                currentOperationKind = TSMathOperationKind::DIVIDE;
+            case Token::MathSymbol::DIVIDE:
+                currentOperationKind = MathOperationKind::DIVIDE;
                 break;
-            case TSToken::MathSymbol::BRACKET_OPEN:
-                currentOperationKind = TSMathOperationKind::BRACKET_OPEN;
+            case Token::MathSymbol::BRACKET_OPEN:
+                currentOperationKind = MathOperationKind::BRACKET_OPEN;
                 break;
-            case TSToken::MathSymbol::BRACKET_CLOSE:
-                currentOperationKind = TSMathOperationKind::BRACKET_CLOSE;
+            case Token::MathSymbol::BRACKET_CLOSE:
+                currentOperationKind = MathOperationKind::BRACKET_CLOSE;
                 break;
             }
 
             currentOperation = {currentOperationKind,
                                 0,
                                 tokenContainer.pos};
-        } else if (token.type() == TSToken::Type::CONSTANT_NUMBER) {
-            currentOperation = {TSMathOperationKind::CONSTANT,
-                                token.value<TSInteger>(),
+        } else if (token.type() == Token::Type::CONSTANT_NUMBER) {
+            currentOperation = {MathOperationKind::CONSTANT,
+                                token.value<Integer>(),
                                 tokenContainer.pos};
         }
 
@@ -83,22 +83,22 @@ auto convertToMathOperationVector(const vector<TSTokenContainer> &tokenContainer
     return mathOperationVector;
 };
 
-TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseudoSentence, const map<string, TSLabel> &labelMap) :
-    TSRawSentence(pseudoSentence.baseTokenContainer.pos, pseudoSentence.assume),
-    instruction(pseudoSentence.baseTokenContainer.token.value<TSToken::Instruction>())
+RawInstructionSentence::RawInstructionSentence(const PseudoSentence &pseudoSentence, const map<string, Label> &labelMap) :
+    RawSentence(pseudoSentence.baseTokenContainer.pos, pseudoSentence.assume),
+    instruction(pseudoSentence.baseTokenContainer.token.value<Token::Instruction>())
 {
-    typedef vector<TSTokenContainer>::const_iterator ItType;
+    typedef vector<TokenContainer>::const_iterator ItType;
 
     auto locateMemoryBracketExpression = [](ItType it, ItType endIt) -> ItType {
         if ((it == endIt) ||
-            (it->token.type() != TSToken::Type::MEMORY_BRACKET) ||
-            (it->token.value<TSToken::MemoryBracket>() != TSToken::MemoryBracket::OPEN))
+            (it->token.type() != Token::Type::MEMORY_BRACKET) ||
+            (it->token.value<Token::MemoryBracket>() != Token::MemoryBracket::OPEN))
         {
             return it;
         }
 
-        while ((it->token.type() != TSToken::Type::MEMORY_BRACKET) ||
-               (it->token.value<TSToken::MemoryBracket>() != TSToken::MemoryBracket::CLOSE))
+        while ((it->token.type() != Token::Type::MEMORY_BRACKET) ||
+               (it->token.value<Token::MemoryBracket>() != Token::MemoryBracket::CLOSE))
         {
             ++it;
         }
@@ -108,8 +108,8 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
 
     auto isPureMath = [](ItType it, ItType endIt) -> bool {
         while (it != endIt) {
-            if ((it->token.type() != TSToken::Type::MATH_SYMBOL) &&
-                (it->token.type() != TSToken::Type::CONSTANT_NUMBER))
+            if ((it->token.type() != Token::Type::MATH_SYMBOL) &&
+                (it->token.type() != Token::Type::CONSTANT_NUMBER))
             {
                 return false;
             }
@@ -120,65 +120,65 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
         return true;
     };
 
-    const vector<vector<TSTokenContainer>> &operandsTokenContainerVector = pseudoSentence.operandsTokenContainerVector;
+    const vector<vector<TokenContainer>> &operandsTokenContainerVector = pseudoSentence.operandsTokenContainerVector;
 
     for (auto it = operandsTokenContainerVector.begin(); it != operandsTokenContainerVector.end(); ++it) {
-        const vector<TSTokenContainer> &tokenContainerVector = *it;
+        const vector<TokenContainer> &tokenContainerVector = *it;
 
         if (tokenContainerVector.size() == 1) {
-            const TSToken &token = tokenContainerVector[0].token;
+            const Token &token = tokenContainerVector[0].token;
 
-            if (token.type() == TSToken::Type::REGISTER) {
-                operandContainerVector.push_back(OperandContainer({token.value<TSToken::Register>(), {0, nullopt, false}}, tokenContainerVector[0].pos));
+            if (token.type() == Token::Type::REGISTER) {
+                operandContainerVector.push_back(OperandContainer({token.value<Token::Register>(), {0, nullopt, false}}, tokenContainerVector[0].pos));
                 continue;
             }
         }
 
-        TSCodePosition operandPos = calculatePos(tokenContainerVector.begin(), tokenContainerVector.end());
+        CodePosition operandPos = calculatePos(tokenContainerVector.begin(), tokenContainerVector.end());
 
         auto jt = tokenContainerVector.begin();
         
         Mask opMask;
         
-        if (jt->token.type() == TSToken::Type::SIZE_IDENTIFIER) {
-            switch (jt->token.value<TSToken::SizeIdentifier>()) {
-            case TSToken::SizeIdentifier::BYTE:
+        if (jt->token.type() == Token::Type::SIZE_IDENTIFIER) {
+            switch (jt->token.value<Token::SizeIdentifier>()) {
+            case Token::SizeIdentifier::BYTE:
                 opMask |= S8;
                 break;
-            case TSToken::SizeIdentifier::WORD:
+            case Token::SizeIdentifier::WORD:
                 opMask |= S16;
                 break;
-            case TSToken::SizeIdentifier::DWORD:
+            case Token::SizeIdentifier::DWORD:
                 opMask |= S32;
                 break;
             }
             ++jt;
 
-            if (jt->token.type() == TSToken::Type::SIZE_OPERATOR)
+            if (jt->token.type() == Token::Type::SIZE_OPERATOR)
                 ++jt;
         }
 
         bool thisOpPrefixOverride = false;
-        if ((jt->token.type() == TSToken::Type::REGISTER) &&
-            (jt->token.value<TSToken::Register>().match(SREG)))
+        if ((jt->token.type() == Token::Type::REGISTER) &&
+            (jt->token.value<Token::Register>().match(SREG)))
         {
-            segmentPrefix = getSegmentOverridePrefix(jt->token.value<TSToken::Register>());
+            segmentPrefix = getSegmentOverridePrefix(jt->token.value<Token::Register>());
             thisOpPrefixOverride = true;
 
             jt += 2;
         }
 
-        vector<vector<TSTokenContainer>> rawOperandTokenContainerVectors;
+        vector<vector<TokenContainer>> rawOperandTokenContainerVectors;
 
         auto firstEndIt = getMathTokenSequence(jt, tokenContainerVector.end());
         if ((firstEndIt == tokenContainerVector.end()) &&
             isPureMath(jt, firstEndIt))
         {
             if (thisOpPrefixOverride)
-                throw TSCompileError("constant cannot have segment override", operandPos);
+                throw CompileError("constant cannot have segment override", operandPos);
 
-            TSInteger constant = mathExpressionComputer(convertToMathOperationVector({jt, firstEndIt}));
-            TSRawNumber rawNum{constant, nullopt, false};
+            Integer constant = mathExpressionComputer(convertToMathOperationVector({jt, firstEndIt}));
+            RawNumber rawNum{constant, nullopt, false};
             operandContainerVector.push_back(OperandContainer({opMask | IMM, rawNum}, operandPos));
             continue;
         }
@@ -191,45 +191,45 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
             jt = bracketEndIt;
         }
 
-        vector<vector<TSTokenContainer>> operandTokenContainerVectors;
+        vector<vector<TokenContainer>> operandTokenContainerVectors;
 
         for (auto kt = rawOperandTokenContainerVectors.begin(); kt != rawOperandTokenContainerVectors.end(); ++kt) {
             auto firstIt = kt->begin();
             
             for (auto lt = kt->begin(); lt != kt->end(); ++lt) {
-                if ((lt->token.type() == TSToken::Type::MATH_SYMBOL) &&
-                    (lt->token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::PLUS))
+                if ((lt->token.type() == Token::Type::MATH_SYMBOL) &&
+                    (lt->token.value<Token::MathSymbol>() == Token::MathSymbol::PLUS))
                 {
                     operandTokenContainerVectors.push_back({firstIt, lt});
                     firstIt = lt + 1;
 
                     if (firstIt == kt->end())
-                        throw TSCompileError("'+' must have right value", lt->pos);
+                        throw CompileError("'+' must have right value", lt->pos);
                 }
             }
 
             operandTokenContainerVectors.push_back({firstIt, kt->end()});
         }
 
-        TSRawNumber disp;
+        RawNumber disp;
         
         Mask baseReg;
         Mask indexReg;
         Mask indexMult;
         for (auto kt = operandTokenContainerVectors.begin(); kt != operandTokenContainerVectors.end(); ++kt) {
             if (kt->size() == 1) {
-                TSTokenContainer &tokenContainer = (*kt)[0];
-                TSToken &token = tokenContainer.token;
+                TokenContainer &tokenContainer = (*kt)[0];
+                Token &token = tokenContainer.token;
 
-                if (token.type() == TSToken::Type::REGISTER) {
-                    TSToken::Register reg = token.value<TSToken::Register>();
+                if (token.type() == Token::Type::REGISTER) {
+                    Token::Register reg = token.value<Token::Register>();
 
                     if (reg.match(UREG16)) {
                         if (!opMask.matchAny(MEM_MODE_ANY))
                             opMask |= MEM_16;
                         
                         if (opMask.match(MEM_32))
-                            throw TSCompileError("incorrect size of register", tokenContainer.pos);
+                            throw CompileError("incorrect size of register", tokenContainer.pos);
 
                         if (!baseReg.matchAny(UREG_ANY)) {
                             baseReg = reg;
@@ -239,13 +239,13 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                             continue;
                         }
 
-                        throw TSCompileError("unexpected token", tokenContainer.pos);
+                        throw CompileError("unexpected token", tokenContainer.pos);
                     } else if (reg.match(UREG32)) {
                         if (!opMask.matchAny(MEM_MODE_ANY))
                             opMask |= MEM_32;
 
                         if (opMask.match(MEM_16))
-                            throw TSCompileError("incorrect size of register", tokenContainer.pos);
+                            throw CompileError("incorrect size of register", tokenContainer.pos);
 
                         if (!baseReg.matchAny(UREG_ANY)) {
                             baseReg = reg;
@@ -256,26 +256,26 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                             continue;
                         }
 
-                        throw TSCompileError("unexpected token", tokenContainer.pos);
+                        throw CompileError("unexpected token", tokenContainer.pos);
                     }
                 }
             }
 
             if ((kt->size() == 3) &&
-                ((*kt)[1].token.type() == TSToken::Type::MATH_SYMBOL) &&
-                ((*kt)[1].token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::MULTIPLY))
+                ((*kt)[1].token.type() == Token::Type::MATH_SYMBOL) &&
+                ((*kt)[1].token.value<Token::MathSymbol>() == Token::MathSymbol::MULTIPLY))
             {
-                if ((((*kt)[0].token.type() == TSToken::Type::REGISTER) &&
-                     ((*kt)[0].token.value<TSToken::Register>().match(UREG32)) &&
-                     ((*kt)[2].token.type() == TSToken::Type::CONSTANT_NUMBER)) ||
-                    (((*kt)[2].token.type() == TSToken::Type::REGISTER) &&
-                     ((*kt)[0].token.value<TSToken::Register>().match(UREG32)) &&
-                     ((*kt)[0].token.type() == TSToken::Type::CONSTANT_NUMBER)))
+                if ((((*kt)[0].token.type() == Token::Type::REGISTER) &&
+                     ((*kt)[0].token.value<Token::Register>().match(UREG32)) &&
+                     ((*kt)[2].token.type() == Token::Type::CONSTANT_NUMBER)) ||
+                    (((*kt)[2].token.type() == Token::Type::REGISTER) &&
+                     ((*kt)[0].token.value<Token::Register>().match(UREG32)) &&
+                     ((*kt)[0].token.type() == Token::Type::CONSTANT_NUMBER)))
                 {
-                    TSTokenContainer regTokenContainer;
-                    TSTokenContainer immTokenContainer;
+                    TokenContainer regTokenContainer;
+                    TokenContainer immTokenContainer;
 
-                    if ((*kt)[0].token.type() == TSToken::Type::REGISTER) {
+                    if ((*kt)[0].token.type() == Token::Type::REGISTER) {
                         regTokenContainer = (*kt)[0];
                         immTokenContainer = (*kt)[2];
                     } else {
@@ -287,12 +287,12 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                         opMask |= MEM_32;
 
                     if (opMask.match(MEM_16))
-                        throw TSCompileError("incorrect size of register", regTokenContainer.pos);
+                        throw CompileError("incorrect size of register", regTokenContainer.pos);
 
                     if (indexReg.matchAny(UREG_ANY))
-                        throw TSCompileError("unexpected token", calculatePos(kt->begin(), kt->end()));
+                        throw CompileError("unexpected token", calculatePos(kt->begin(), kt->end()));
                     else {
-                        TSInteger indexIntFact = immTokenContainer.token.value<TSInteger>();
+                        Integer indexIntFact = immTokenContainer.token.value<Integer>();
                         Mask reg = regTokenContainer.token.value<Mask>();
                         
                         if (indexIntFact == 1) {
@@ -312,7 +312,7 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                             indexMult = MEM_32_INDEX_MULT8;
                             continue;
                         } else
-                            throw TSCompileError("unsupported factor", immTokenContainer.pos);
+                            throw CompileError("unsupported factor", immTokenContainer.pos);
                     }
                 }
             }
@@ -320,13 +320,13 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
             if (!kt->empty()) {
                 auto lt = kt->begin();
                 
-                if (lt->token.type() == TSToken::Type::USER_IDENTIFIER) {
+                if (lt->token.type() == Token::Type::USER_IDENTIFIER) {
                     if (disp.label)
-                        throw TSCompileError("you can use only one pointer in addressing", lt->pos);
+                        throw CompileError("you can use only one pointer in addressing", lt->pos);
 
                     auto labelIt = labelMap.find(lt->token.value<string>());
                     if (labelIt == labelMap.end())
-                        throw TSCompileError("undefined label", lt->pos);
+                        throw CompileError("undefined label", lt->pos);
 
                     disp.label = labelIt->second;
                     disp.isNotFinal = true;
@@ -343,12 +343,12 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
         }
 
         if (!opMask.matchAny(MEM_MODE_ANY)) {
-            //TODO: Implement check by TSInteger size
-            switch (TSCompiler::arch) {
-            case TSCompiler::Arch::X86_16:
+            //TODO: Implement check by Integer size
+            switch (Compiler::arch) {
+            case Compiler::Arch::X86_16:
                 opMask |= MEM_16;
                 break;
-            case TSCompiler::Arch::X86_32:
+            case Compiler::Arch::X86_32:
                 opMask |= MEM_32;
                 break;
             }
@@ -361,7 +361,7 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                     baseReg.match(DX) ||
                     baseReg.match(SP))
                 {
-                    throw TSCompileError("in 16 bit addressing mode registers can only be bx,bp,si,di", operandPos);
+                    throw CompileError("in 16 bit addressing mode registers can only be bx,bp,si,di", operandPos);
                 }
 
                 if (indexReg.matchAny(UREG_ANY)) {
@@ -370,7 +370,7 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                         indexReg.match(DX) ||
                         indexReg.match(SP))
                     {
-                        throw TSCompileError("in 16 bit addressing mode registers can only be bx,bp,si,di", operandPos);
+                        throw CompileError("in 16 bit addressing mode registers can only be bx,bp,si,di", operandPos);
                     }
 
                     if (((baseReg.match(BX) || baseReg.match(BP)) &&
@@ -378,18 +378,18 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
                         ((baseReg.match(SI) || baseReg.match(DI)) &&
                          (indexReg.match(SI) || indexReg.match(DI))))
                     {
-                        throw TSCompileError("in 16 bit addressing mode base register can only be bx or bp, and index si or di", operandPos);
+                        throw CompileError("in 16 bit addressing mode base register can only be bx or bp, and index si or di", operandPos);
                     }
                 }
             }
         } else {
             if (indexReg.match(ESP)) {
                 if (!indexMult.match(MEM_32_INDEX_MULT1))
-                    throw TSCompileError("you cannot use esp as index register", operandPos);
+                    throw CompileError("you cannot use esp as index register", operandPos);
 
                 if (baseReg.matchAny(UREG_ANY)) {
                     if (baseReg.match(ESP))
-                        throw TSCompileError("you cannot use esp as index register", operandPos);
+                        throw CompileError("you cannot use esp as index register", operandPos);
 
                     std::swap(baseReg, indexReg);
                 } else {
@@ -433,7 +433,7 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
         operandContainerVector.push_back(OperandContainer({opMask, disp}, operandPos));
     }
 
-    if (TSInstruction::jumpInstructionsSet.count(instruction) &&
+    if (InstructionNS::jumpInstructionsSet.count(instruction) &&
         (operandContainerVector.size() == 1))
     {
         Operand &op = get<0>(operandContainerVector[0]);
@@ -449,13 +449,13 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
         Operand &op = get<0>(*it);
         if (op.rawNum.label && op.mask.match(MEM) && (!op.mask.matchAny(S_ANY)) && op.rawNum.label->dataIdentifier) {
             switch (*op.rawNum.label->dataIdentifier) {
-            case TSToken::DataIdentifier::DB:
+            case Token::DataIdentifier::DB:
                 op.mask |= S8;
                 break;
-            case TSToken::DataIdentifier::DW:
+            case Token::DataIdentifier::DW:
                 op.mask |= S16;
                 break;
-            case TSToken::DataIdentifier::DD:
+            case Token::DataIdentifier::DD:
                 op.mask |= S32;
                 break;
             }
@@ -463,8 +463,8 @@ TSRawInstructionSentence::TSRawInstructionSentence(const TSPseudoSentence &pseud
     }
 }
 
-tuple<string, vector<string>> TSRawInstructionSentence::present(const map<string, TSLabel> &labelMap) const {
-    string instructionStr = findByValue(TSInstruction::instructionMap, instruction)->first;
+tuple<string, vector<string>> RawInstructionSentence::present(const map<string, Label> &labelMap) const {
+    string instructionStr = findByValue(InstructionNS::instructionMap, instruction)->first;
 
     vector<string> operandStrVector;
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
@@ -473,7 +473,7 @@ tuple<string, vector<string>> TSRawInstructionSentence::present(const map<string
     return make_tuple(instructionStr, operandStrVector);
 }
 
-string TSRawInstructionSentence::Operand::present(const map<string, TSLabel> &labelMap) const {
+string RawInstructionSentence::Operand::present(const map<string, Label> &labelMap) const {
     if (mask.match(UREG) || mask.match(SREG))
         return findByValue(registerMap, mask)->first;
     else if (mask.match(MEM)) {
@@ -529,7 +529,7 @@ string TSRawInstructionSentence::Operand::present(const map<string, TSLabel> &la
 
         optional<string> labelStr;
         if (rawNum.label) {
-            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), TSLabelFinder(*rawNum.label));
+            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), LabelFinder(*rawNum.label));
             labelStr = labelIt->first;
         }
 
@@ -576,7 +576,7 @@ string TSRawInstructionSentence::Operand::present(const map<string, TSLabel> &la
     } else {
         optional<string> labelStr;
         if (rawNum.label) {
-            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), TSLabelFinder(*rawNum.label));
+            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), LabelFinder(*rawNum.label));
             labelStr = labelIt->first;
         }
 
@@ -593,60 +593,60 @@ string TSRawInstructionSentence::Operand::present(const map<string, TSLabel> &la
     }
 }
 
-TSRawDataSentence::TSRawDataSentence(const TSPseudoSentence &pseudoSentence, const map<string, TSLabel> &labelMap) :
-    TSRawSentence(pseudoSentence.baseTokenContainer.pos, pseudoSentence.assume),
-    dataIdentifier(pseudoSentence.baseTokenContainer.token.value<TSToken::DataIdentifier>())
+RawDataSentence::RawDataSentence(const PseudoSentence &pseudoSentence, const map<string, Label> &labelMap) :
+    RawSentence(pseudoSentence.baseTokenContainer.pos, pseudoSentence.assume),
+    dataIdentifier(pseudoSentence.baseTokenContainer.token.value<Token::DataIdentifier>())
 {
-    const vector<vector<TSTokenContainer>> &operandsTokenContainerVector = pseudoSentence.operandsTokenContainerVector;
+    const vector<vector<TokenContainer>> &operandsTokenContainerVector = pseudoSentence.operandsTokenContainerVector;
 
     for (auto it = operandsTokenContainerVector.begin(); it != operandsTokenContainerVector.end(); ++it) {
-        TSCodePosition operandPos = calculatePos(it->begin(), it->end());
+        CodePosition operandPos = calculatePos(it->begin(), it->end());
 
         if ((it->size() == 1) &&
-            ((*it)[0].token.type() == TSToken::Type::CONSTANT_STRING))
+            ((*it)[0].token.type() == Token::Type::CONSTANT_STRING))
         {
             if (dataIdentifier != DataIdentifier::DB)
-                throw TSCompileError("you can use string constant only with DB", operandPos);
+                throw CompileError("you can use string constant only with DB", operandPos);
 
             string str = (*it)[0].token.value<string>();
 
             for (size_t i = 0; i < str.size(); ++i) {
-                TSCodePosition charPos = {operandPos.row, operandPos.column + i + 1, 1};
-                operandContainerVector.push_back(OperandContainer({(TSUInt)str[i], nullopt, false}, charPos));
+                CodePosition charPos = {operandPos.row, operandPos.column + i + 1, 1};
+                operandContainerVector.push_back(OperandContainer({(UInt)str[i], nullopt, false}, charPos));
             }
 
             continue;
         }
 
-        vector<vector<TSTokenContainer>> operandTokenContainerVectors;
+        vector<vector<TokenContainer>> operandTokenContainerVectors;
 
         auto firstIt = it->begin();
         for (auto jt = it->begin(); jt != it->end(); ++jt) {
-            if ((jt->token.type() == TSToken::Type::MATH_SYMBOL) &&
-                (jt->token.value<TSToken::MathSymbol>() == TSToken::MathSymbol::PLUS))
+            if ((jt->token.type() == Token::Type::MATH_SYMBOL) &&
+                (jt->token.value<Token::MathSymbol>() == Token::MathSymbol::PLUS))
             {
                 operandTokenContainerVectors.push_back({firstIt, jt});
                 firstIt = jt + 1;
 
                 if (firstIt == it->end())
-                    throw TSCompileError("'+' must have right value", jt->pos);
+                    throw CompileError("'+' must have right value", jt->pos);
             }
         }
         operandTokenContainerVectors.push_back({firstIt, it->end()});
 
-        TSRawNumber rawNum;
+        RawNumber rawNum;
 
         for (auto jt = operandTokenContainerVectors.begin(); jt != operandTokenContainerVectors.end(); ++jt) {
             if (!jt->empty()) {
                 auto kt = jt->begin();
                 
-                if (kt->token.type() == TSToken::Type::USER_IDENTIFIER) {
+                if (kt->token.type() == Token::Type::USER_IDENTIFIER) {
                     if (rawNum.label)
-                        throw TSCompileError("you can use only one pointer in data", kt->pos);
+                        throw CompileError("you can use only one pointer in data", kt->pos);
 
                     auto labelIt = labelMap.find(kt->token.value<string>());
                     if (labelIt == labelMap.end())
-                        throw TSCompileError("undefined label", kt->pos);
+                        throw CompileError("undefined label", kt->pos);
 
                     rawNum.label = labelIt->second;
                     rawNum.isNotFinal = true;
@@ -666,16 +666,16 @@ TSRawDataSentence::TSRawDataSentence(const TSPseudoSentence &pseudoSentence, con
     }
 }
 
-tuple<string, vector<string>> TSRawDataSentence::present(const map<string, TSLabel> &labelMap) const {
-    string instructionStr = findByValue(TSInstruction::dataIdentifierMap, dataIdentifier)->first;
+tuple<string, vector<string>> RawDataSentence::present(const map<string, Label> &labelMap) const {
+    string instructionStr = findByValue(InstructionNS::dataIdentifierMap, dataIdentifier)->first;
 
     vector<string> operandStrVector;
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it) {
-        const TSRawNumber &rawNum = get<0>(*it);
+        const RawNumber &rawNum = get<0>(*it);
         
         optional<string> labelStr;
         if (rawNum.label) {
-            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), TSLabelFinder(*rawNum.label));
+            auto labelIt = std::find_if(labelMap.begin(), labelMap.end(), LabelFinder(*rawNum.label));
             labelStr = labelIt->first;
         }
 
@@ -698,19 +698,19 @@ tuple<string, vector<string>> TSRawDataSentence::present(const map<string, TSLab
     return make_tuple(instructionStr, operandStrVector);
 }
 
-vector<TSRawSentencesSegment> constructRawSentences(const vector<TSPseudoSentencesSegment> &pseudoSentencesSegmentContainerVector,
-                                                    const map<string, TSLabel> &labelMap)
+vector<RawSentencesSegment> constructRawSentences(const vector<PseudoSentencesSegment> &pseudoSentencesSegmentContainerVector,
+                                                    const map<string, Label> &labelMap)
 {
-    vector<TSRawSentencesSegment> rawSentencesSegmentContainerVector;
+    vector<RawSentencesSegment> rawSentencesSegmentContainerVector;
 
     for (auto it = pseudoSentencesSegmentContainerVector.begin(); it != pseudoSentencesSegmentContainerVector.end(); ++it) {
-        vector<shared_ptr<TSRawSentence>> rawSentenceVector;
+        vector<shared_ptr<RawSentence>> rawSentenceVector;
 
         for (auto jt = it->pseudoSentences.begin(); jt != it->pseudoSentences.end(); ++jt) {
-            if (jt->baseTokenContainer.token.type() == TSToken::Type::INSTRUCTION)
-                rawSentenceVector.push_back(shared_ptr<TSRawSentence>(new TSRawInstructionSentence(*jt, labelMap)));
+            if (jt->baseTokenContainer.token.type() == Token::Type::INSTRUCTION)
+                rawSentenceVector.push_back(shared_ptr<RawSentence>(new RawInstructionSentence(*jt, labelMap)));
             else
-                rawSentenceVector.push_back(shared_ptr<TSRawSentence>(new TSRawDataSentence(*jt, labelMap)));
+                rawSentenceVector.push_back(shared_ptr<RawSentence>(new RawDataSentence(*jt, labelMap)));
         }
 
         rawSentencesSegmentContainerVector.push_back({it->segName, rawSentenceVector});

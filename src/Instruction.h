@@ -1,21 +1,21 @@
-#ifndef _TSINSTRUCTION_H_
-#define _TSINSTRUCTION_H_
+#ifndef _INSTRUCTION_H_
+#define _INSTRUCTION_H_
 
-#include "TSGlobal.h"
-#include "TSOperandMask.h"
-#include "TSInteger.h"
+#include "Global.h"
+#include "OperandMask.h"
+#include "Integer.h"
 #include <bitset>
 
-namespace TSOperandMask {
+namespace OperandMask {
 
 extern const map<string, Mask> registerMap;
 extern const set<Mask> segmentRegisters;
 
 };
 
-class TSInstructionSentence;
+class InstructionSentence;
 
-namespace TSInstruction {
+namespace InstructionNS {
 
 enum class Instruction {
     NOP,
@@ -38,28 +38,28 @@ extern const set<Instruction> jumpInstructionsSet;
 
 class OperandFullMask {
 public:
-    inline OperandFullMask(TSOperandMask::Mask mask, TSInteger num) :
+    inline OperandFullMask(OperandMask::Mask mask, Integer num) :
         mask(mask),
         num(num)
     {}
 
-    inline OperandFullMask(TSOperandMask::Mask mask) :
+    inline OperandFullMask(OperandMask::Mask mask) :
         mask(mask)
     {}
 
-    TSOperandMask::Mask mask;
-    optional<TSInteger> num;
+    OperandMask::Mask mask;
+    optional<Integer> num;
 };
 
 class Definition {
 public:
-    typedef TSInstruction::Instruction Instruction;
+    typedef InstructionNS::Instruction Instruction;
 
     inline Definition(vector<uchar> opcode,
                       uchar opcodeAdd,
                       Instruction inst,
                       vector<OperandFullMask> operandFullMasks,
-                      function<vector<vector<uchar>>(Definition, TSInstructionSentence)> computeFunc) :
+                      function<vector<vector<uchar>>(Definition, InstructionSentence)> computeFunc) :
         opcode(opcode),
         opcodeAdd(opcodeAdd),
         instruction(inst),
@@ -70,7 +70,7 @@ public:
     inline Definition(vector<uchar> opcode,
                       Instruction inst,
                       vector<OperandFullMask> operandFullMasks,
-                      function<vector<vector<uchar>>(Definition, TSInstructionSentence)> computeFunc) :
+                      function<vector<vector<uchar>>(Definition, InstructionSentence)> computeFunc) :
         opcode(opcode),
         instruction(inst),
         operandFullMasks(operandFullMasks),
@@ -81,7 +81,7 @@ public:
     optional<uchar> opcodeAdd;
     Instruction instruction;
     vector<OperandFullMask> operandFullMasks;
-    function<vector<vector<uchar>>(Definition, TSInstructionSentence)> computeFunc;
+    function<vector<vector<uchar>>(Definition, InstructionSentence)> computeFunc;
 };
 
 extern const vector<Definition> instructionDefinitionVector;

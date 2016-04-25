@@ -1,11 +1,11 @@
-#include "TSInstruction.h"
+#include "Instruction.h"
 
-#include "TSCompiler.h"
-#include "TSRawSentence.h"
-#include "TSSentence.h"
-#include "TSException.h"
+#include "Compiler.h"
+#include "RawSentence.h"
+#include "Sentence.h"
+#include "Exception.h"
 
-namespace TSOperandMask {
+namespace OperandMask {
 
 const map<string, Mask> registerMap = {
     {"AL", AL},
@@ -54,9 +54,9 @@ const set<Mask> segmentRegisters = {
 
 }
 
-namespace TSInstruction {
+namespace InstructionNS {
 
-using namespace TSOperandMask;
+using namespace OperandMask;
 
 const map<string, Instruction> instructionMap = {
     {"NOP", Instruction::NOP},
@@ -110,18 +110,18 @@ bitset<3> getBitsetFromMask(const Mask &mask, bool useSecondRange = false) {
         return 0b000;
 }
 
-bitset<2> getMOD(const TSInstructionSentence::OperandContainer &operandContainer) {
-    const TSInstructionSentence::Operand &op = get<0>(operandContainer);
+bitset<2> getMOD(const InstructionSentence::OperandContainer &operandContainer) {
+    const InstructionSentence::Operand &op = get<0>(operandContainer);
 
     if (!op.mask.match(MEM))
         return 0b11;
 
     if (op.isLinkable) {
         if (op.mask.match(MEM_16)) {
-            if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_16))
+            if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= Integer::Size::S_16))
                 return 0b10;
         } else {
-            if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_32))
+            if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= Integer::Size::S_32))
                 return 0b10;
         }
     }
@@ -129,21 +129,21 @@ bitset<2> getMOD(const TSInstructionSentence::OperandContainer &operandContainer
     if (op.num == 0)
         return 0b00;
 
-    if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_8))
+    if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= Integer::Size::S_8))
         return 0b01;
 
     if (op.mask.match(MEM_16)) {
-        if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_16))
+        if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= Integer::Size::S_16))
             return 0b10;
     } else {
-        if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= TSInteger::Size::S_32))
+        if ((op.num.sizeSigned()) && (*op.num.sizeSigned() <= Integer::Size::S_32))
             return 0b10;
     }
 
-    throw TSCompileError("disp too big", get<1>(operandContainer));
+    throw CompileError("disp too big", get<1>(operandContainer));
 }
 
-bitset<2> getScale(const TSInstructionSentence::Operand &op) {
+bitset<2> getScale(const InstructionSentence::Operand &op) {
     if (op.mask.match(MEM_32_INDEX_MULT1))
         return 0b00;
     else if (op.mask.match(MEM_32_INDEX_MULT2))
@@ -156,31 +156,31 @@ bitset<2> getScale(const TSInstructionSentence::Operand &op) {
         return 0b00;
 }
 
-TSInteger::Size getSuitableDispSize(const TSInstructionSentence::Operand &op) {
+Integer::Size getSuitableDispSize(const InstructionSentence::Operand &op) {
     if (op.isLinkable) {
         if (op.mask.match(MEM_32))
-            return TSInteger::Size::S_32;
+            return Integer::Size::S_32;
         else
-            return TSInteger::Size::S_16;
+            return Integer::Size::S_16;
     } else {
-        if (op.num.sizeSigned() <= TSInteger::Size::S_8)
-            return TSInteger::Size::S_8;
+        if (op.num.sizeSigned() <= Integer::Size::S_8)
+            return Integer::Size::S_8;
         else {
             if (op.mask.match(MEM_32))
-                return TSInteger::Size::S_32;
+                return Integer::Size::S_32;
             else
-                return TSInteger::Size::S_16;
+                return Integer::Size::S_16;
         }
     }
 }
 
-const map<TSInstructionSentence::SegmentPrefix, uchar> prefixMap = {
-    {TSInstructionSentence::SegmentPrefix::ES, 0x26},
-    {TSInstructionSentence::SegmentPrefix::CS, 0x2E},
-    {TSInstructionSentence::SegmentPrefix::SS, 0x36},
-    {TSInstructionSentence::SegmentPrefix::DS, 0x3E},
-    {TSInstructionSentence::SegmentPrefix::FS, 0x64},
-    {TSInstructionSentence::SegmentPrefix::GS, 0x65},
+const map<InstructionSentence::SegmentPrefix, uchar> prefixMap = {
+    {InstructionSentence::SegmentPrefix::ES, 0x26},
+    {InstructionSentence::SegmentPrefix::CS, 0x2E},
+    {InstructionSentence::SegmentPrefix::SS, 0x36},
+    {InstructionSentence::SegmentPrefix::DS, 0x3E},
+    {InstructionSentence::SegmentPrefix::FS, 0x64},
+    {InstructionSentence::SegmentPrefix::GS, 0x65},
 };
 
 vector<vector<uchar>> generateOpcode(const vector<uchar> &opcodeByteVector) {
@@ -192,7 +192,7 @@ vector<vector<uchar>> generateOpcode(const vector<uchar> &opcodeByteVector) {
     return res;
 }
 
-vector<vector<uchar>> generateSegmentOverridePrefixes(const TSInstructionSentence &instructionSentence, const TSInstructionSentence::Operand &op) {
+vector<vector<uchar>> generateSegmentOverridePrefixes(const InstructionSentence &instructionSentence, const InstructionSentence::Operand &op) {
     vector<vector<uchar>> res;
 
     if (op.mask.match(MEM)) {
@@ -210,20 +210,20 @@ vector<vector<uchar>> generateSegmentOverridePrefixes(const TSInstructionSentenc
                 op.mask.match(MEM_16_BP_SI) ||
                 op.mask.match(MEM_16_BP_DI))
             {
-                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::SS))
+                if (segmentPrefix && (*segmentPrefix == InstructionSentence::SegmentPrefix::SS))
                     segmentPrefix = nullopt;
             } else {
-                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::DS))
+                if (segmentPrefix && (*segmentPrefix == InstructionSentence::SegmentPrefix::DS))
                     segmentPrefix = nullopt;
             }
         } else {
             if (op.mask.match(MEM_32_BASE_EBP) ||
                 op.mask.match(MEM_32_BASE_ESP))
             {
-                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::SS))
+                if (segmentPrefix && (*segmentPrefix == InstructionSentence::SegmentPrefix::SS))
                     segmentPrefix = nullopt;
             } else {
-                if (segmentPrefix && (*segmentPrefix == TSInstructionSentence::SegmentPrefix::DS))
+                if (segmentPrefix && (*segmentPrefix == InstructionSentence::SegmentPrefix::DS))
                     segmentPrefix = nullopt;
             }
         }
@@ -238,13 +238,13 @@ vector<vector<uchar>> generateSegmentOverridePrefixes(const TSInstructionSentenc
 constexpr uchar dataSizeOverridePrefix    = 0x66;
 constexpr uchar addressSizeOverridePrefix = 0x67;
 
-vector<vector<uchar>> generateAddressSizeOverridePrefix(const TSInstructionSentence::Operand &op) {
+vector<vector<uchar>> generateAddressSizeOverridePrefix(const InstructionSentence::Operand &op) {
     vector<vector<uchar>> res;
 
     if ((op.mask.match(MEM)) &&
-        (((TSCompiler::arch == TSCompiler::Arch::X86_16) &&
+        (((Compiler::arch == Compiler::Arch::X86_16) &&
           (op.mask.match(MEM_32))) ||
-         ((TSCompiler::arch == TSCompiler::Arch::X86_32) &&
+         ((Compiler::arch == Compiler::Arch::X86_32) &&
           (op.mask.match(MEM_16)))))
     {
         res.push_back({addressSizeOverridePrefix});
@@ -253,12 +253,12 @@ vector<vector<uchar>> generateAddressSizeOverridePrefix(const TSInstructionSente
     return res;
 }
 
-vector<vector<uchar>> generateDataSizeOverridePrefix(const TSInstructionSentence::Operand &op) {
+vector<vector<uchar>> generateDataSizeOverridePrefix(const InstructionSentence::Operand &op) {
     vector<vector<uchar>> res;
 
-    if (((TSCompiler::arch == TSCompiler::Arch::X86_16) &&
+    if (((Compiler::arch == Compiler::Arch::X86_16) &&
          (op.mask.match(S32))) ||
-        ((TSCompiler::arch == TSCompiler::Arch::X86_32) &&
+        ((Compiler::arch == Compiler::Arch::X86_32) &&
          (op.mask.match(S16))))
     {
         res.push_back({dataSizeOverridePrefix});
@@ -267,10 +267,10 @@ vector<vector<uchar>> generateDataSizeOverridePrefix(const TSInstructionSentence
     return res;
 }
 
-vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandContainer &opCont, const bitset<3> &reg) {
+vector<vector<uchar>> generateMODRMAndSIB(const InstructionSentence::OperandContainer &opCont, const bitset<3> &reg) {
     vector<vector<uchar>> res;
 
-    const TSInstructionSentence::Operand &op = get<0>(opCont);
+    const InstructionSentence::Operand &op = get<0>(opCont);
 
     if (op.mask.match(MEM_16)) {
         if (op.mask.match(MEM_BASE)) {
@@ -285,7 +285,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
             }
         } else {
             res.push_back({composeBits(0b00, reg, 0b110)});
-            res.push_back({op.num.getCharArraySigned(TSInteger::Size::S_16)});
+            res.push_back({op.num.getCharArraySigned(Integer::Size::S_16)});
         }
     } else if (op.mask.match(MEM_32)) {
         if (op.mask.match(MEM_32_INDEX)) {
@@ -307,7 +307,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
             } else {
                 res.push_back({composeBits(0b00, reg, 0b100)});
                 res.push_back({composeBits(scale, index, 0b101)});
-                res.push_back({op.num.getCharArraySigned(TSInteger::Size::S_32)});
+                res.push_back({op.num.getCharArraySigned(Integer::Size::S_32)});
             }
         } else {
             if (op.mask.match(MEM_BASE)) {
@@ -328,7 +328,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
                 }
             } else {
                 res.push_back({composeBits(0b00, reg, 0b110)});
-                res.push_back({op.num.getCharArraySigned(TSInteger::Size::S_32)});
+                res.push_back({op.num.getCharArraySigned(Integer::Size::S_32)});
             }
         }
     } else {
@@ -338,15 +338,15 @@ vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandCo
     return res;
 }
 
-vector<vector<uchar>> generateMODRMAndSIB(const TSInstructionSentence::OperandContainer &mainOpCont, const TSInstructionSentence::OperandContainer &regOpCont) {
+vector<vector<uchar>> generateMODRMAndSIB(const InstructionSentence::OperandContainer &mainOpCont, const InstructionSentence::OperandContainer &regOpCont) {
     return generateMODRMAndSIB(mainOpCont, getBitsetFromMask(get<0>(regOpCont).mask));
 }
 
-vector<vector<uchar>> onlyOpcodeComputeFunc(Definition definition, TSInstructionSentence) {
+vector<vector<uchar>> onlyOpcodeComputeFunc(Definition definition, InstructionSentence) {
     return generateOpcode(definition.opcode);
 }
 
-vector<vector<uchar>> twoOpsOpcodeWithREGAndIMMComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
+vector<vector<uchar>> twoOpsOpcodeWithREGAndIMMComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -371,16 +371,16 @@ vector<vector<uchar>> twoOpsOpcodeWithREGAndIMMComputeFunc(Definition definition
     res.insert(res.end(), addressMODRMAndSIB.begin(), addressMODRMAndSIB.end());
 
     if (definition.operandFullMasks[1].mask.match(IMM32))
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_32));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_32));
     else if (definition.operandFullMasks[1].mask.match(IMM16))
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_16));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_16));
     else
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_8));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_8));
 
     return res;
 }
 
-vector<vector<uchar>> oneOpOpcodeWithREGComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
+vector<vector<uchar>> oneOpOpcodeWithREGComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -406,11 +406,11 @@ vector<vector<uchar>> oneOpOpcodeWithREGComputeFunc(Definition definition, TSIns
 }
 
 template<bool orderDirect>
-vector<vector<uchar>> twoOpsClassicComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
+vector<vector<uchar>> twoOpsClassicComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
-    TSInstructionSentence::OperandContainer mainOpCont;
-    TSInstructionSentence::OperandContainer regOpCont;
+    InstructionSentence::OperandContainer mainOpCont;
+    InstructionSentence::OperandContainer regOpCont;
     
     if (orderDirect) {
         mainOpCont = instructionSentence.operandContainerVector[0];
@@ -444,7 +444,7 @@ vector<vector<uchar>> twoOpsClassicComputeFunc(Definition definition, TSInstruct
     return res;
 }
 
-vector<vector<uchar>> twoOpsAXSpecialWithIMMComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
+vector<vector<uchar>> twoOpsAXSpecialWithIMMComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -460,21 +460,21 @@ vector<vector<uchar>> twoOpsAXSpecialWithIMMComputeFunc(Definition definition, T
     res.insert(res.end(), opcode.begin(), opcode.end());
 
     if (definition.operandFullMasks[1].mask.match(IMM32))
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_32));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_32));
     else if (definition.operandFullMasks[1].mask.match(IMM16))
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_16));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_16));
     else
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_8));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_8));
 
     return res;
 }
 
 template<bool orderDirect>
-vector<vector<uchar>> twoOpsMoffsSpecialComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
+vector<vector<uchar>> twoOpsMoffsSpecialComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
-    TSInstructionSentence::OperandContainer mainOpCont;
-    TSInstructionSentence::OperandContainer moffsOpCont;
+    InstructionSentence::OperandContainer mainOpCont;
+    InstructionSentence::OperandContainer moffsOpCont;
     
     if (orderDirect) {
         mainOpCont = instructionSentence.operandContainerVector[1];
@@ -493,15 +493,15 @@ vector<vector<uchar>> twoOpsMoffsSpecialComputeFunc(Definition definition, TSIns
     auto opcode = generateOpcode(definition.opcode);
     res.insert(res.end(), opcode.begin(), opcode.end());
 
-    if (TSCompiler::arch == TSCompiler::Arch::X86_32)
-        res.push_back(moffsOp.num.getCharArraySigned(TSInteger::Size::S_32));
+    if (Compiler::arch == Compiler::Arch::X86_32)
+        res.push_back(moffsOp.num.getCharArraySigned(Integer::Size::S_32));
     else
-        res.push_back(moffsOp.num.getCharArraySigned(TSInteger::Size::S_16));
+        res.push_back(moffsOp.num.getCharArraySigned(Integer::Size::S_16));
     
     return res;
 }
 
-vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
+vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -518,16 +518,16 @@ vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, T
     res.push_back({opcode});
 
     if (definition.operandFullMasks[1].mask.match(IMM32))
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_32));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_32));
     else if (definition.operandFullMasks[1].mask.match(IMM16))
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_16));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_16));
     else
-        res.push_back(secondOp.num.getCharArrayAny(TSInteger::Size::S_8));
+        res.push_back(secondOp.num.getCharArrayAny(Integer::Size::S_8));
 
     return res;
 }
 
-vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, TSInstructionSentence instructionSentence) {
+vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
     auto firstOpCont = instructionSentence.operandContainerVector[0];
@@ -538,18 +538,18 @@ vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, TSInstructi
     res.insert(res.end(), opcode.begin(), opcode.end());
 
     if (definition.operandFullMasks[0].mask.match(REL32)) {
-        if (TSCompiler::arch == TSCompiler::Arch::X86_32)
-            res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_32));
+        if (Compiler::arch == Compiler::Arch::X86_32)
+            res.push_back(firstOp.num.getCharArraySigned(Integer::Size::S_32));
         else
-            throw TSCompileError("too big relative path", get<1>(firstOpCont));
+            throw CompileError("too big relative path", get<1>(firstOpCont));
     } else if (definition.operandFullMasks[0].mask.match(REL16)) {
-        if (TSCompiler::arch == TSCompiler::Arch::X86_32)
-            res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_32));
+        if (Compiler::arch == Compiler::Arch::X86_32)
+            res.push_back(firstOp.num.getCharArraySigned(Integer::Size::S_32));
         else
-            res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_16));
+            res.push_back(firstOp.num.getCharArraySigned(Integer::Size::S_16));
     }
     else
-        res.push_back(firstOp.num.getCharArraySigned(TSInteger::Size::S_8));
+        res.push_back(firstOp.num.getCharArraySigned(Integer::Size::S_8));
 
     return res;
 }

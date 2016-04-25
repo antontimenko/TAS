@@ -1,12 +1,12 @@
-#ifndef _TSUNIQUEPTR_H_
-#define _TSUNIQUEPTR_H_
+#ifndef _UNIQUEPTR_H_
+#define _UNIQUEPTR_H_
 
 #include <memory>
 #include <functional>
 #include <utility>
 
 template<typename T>
-class TSUniquePtr;
+class UniquePtr;
 
 template<typename T, typename U>
 void defaultDeleter(T *ptr) {
@@ -14,44 +14,44 @@ void defaultDeleter(T *ptr) {
 }
 
 template<typename T, typename U>
-TSUniquePtr<T> defaultCopier(T *ptr) {
-    return TSUniquePtr<T>(new U(*static_cast<U *>(ptr)));
+UniquePtr<T> defaultCopier(T *ptr) {
+    return UniquePtr<T>(new U(*static_cast<U *>(ptr)));
 }
 
 template<typename T>
-class TSUniquePtr : public std::unique_ptr<T, void(*)(T *)> {
+class UniquePtr : public std::unique_ptr<T, void(*)(T *)> {
 public:
-    constexpr TSUniquePtr() :
+    constexpr UniquePtr() :
         std::unique_ptr<T, void(*)(T *)>()
     {}
 
     template<typename U>
-    inline TSUniquePtr(U *ptr) :
+    inline UniquePtr(U *ptr) :
         std::unique_ptr<T, void(*)(T *)>(ptr, defaultDeleter<T, U>),
         copier(defaultCopier<T, U>)
     {}
 
-    TSUniquePtr(const TSUniquePtr &ptr) = delete;
-    inline TSUniquePtr(TSUniquePtr &&ptr) :
+    UniquePtr(const UniquePtr &ptr) = delete;
+    inline UniquePtr(UniquePtr &&ptr) :
         std::unique_ptr<T, void(*)(T *)>(std::move(ptr)),
         copier(std::move(ptr.copier))
     {}
 
-    TSUniquePtr &operator=(const TSUniquePtr &ptr) = delete;
+    UniquePtr &operator=(const UniquePtr &ptr) = delete;
     
-    inline TSUniquePtr &operator=(TSUniquePtr &&ptr) {
+    inline UniquePtr &operator=(UniquePtr &&ptr) {
         std::unique_ptr<T, void(*)(T *)>::operator=(std::move(ptr));
         copier = std::move(ptr.copier);
 
         return *this;
     }
 
-    inline TSUniquePtr<T> copy() const {
+    inline UniquePtr<T> copy() const {
         return copier(this->get());
     }
     
 private:
-    std::function<TSUniquePtr<T>(T *)> copier;
+    std::function<UniquePtr<T>(T *)> copier;
 };
 
 #endif

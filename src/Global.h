@@ -1,5 +1,5 @@
-#ifndef _TSGLOBAL_H_
-#define _TSGLOBAL_H_
+#ifndef _GLOBAL_H_
+#define _GLOBAL_H_
 
 #include <iostream>
 #include <vector>

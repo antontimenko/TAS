@@ -1,10 +1,10 @@
-#ifndef _TSOPERANDMASK_H_
-#define _TSOPERANDMASK_H_
+#ifndef _OPERANDMASK_H_
+#define _OPERANDMASK_H_
 
-#include "TSGlobal.h"
-#include "TSInteger.h"
+#include "Global.h"
+#include "Integer.h"
 
-namespace TSOperandMask {
+namespace OperandMask {
 
 enum : unsigned long long {
     UREG                    = 1ull << 0,
@@ -242,28 +242,28 @@ public:
         return (*this & mask).any();
     }
 
-    static inline Mask operandSizeFromIntegerSize(TSInteger::Size size) {
+    static inline Mask operandSizeFromIntegerSize(Integer::Size size) {
         switch (size) {
-        case TSInteger::Size::S_8:
+        case Integer::Size::S_8:
             return S8;
-        case TSInteger::Size::S_16:
+        case Integer::Size::S_16:
             return S16;
-        case TSInteger::Size::S_32:
+        case Integer::Size::S_32:
             return S32;
         default:
             return S64;
         }
     }
 
-    static inline TSInteger::Size integerSizeFromOperandSize(Mask mask) {
+    static inline Integer::Size integerSizeFromOperandSize(Mask mask) {
         if (mask.match(S8))
-            return TSInteger::Size::S_8;
+            return Integer::Size::S_8;
         else if (mask.match(S16))
-            return TSInteger::Size::S_16;
+            return Integer::Size::S_16;
         else if (mask.match(S32))
-            return TSInteger::Size::S_32;
+            return Integer::Size::S_32;
         else
-            return TSInteger::Size::S_64;
+            return Integer::Size::S_64;
     }
 };
 

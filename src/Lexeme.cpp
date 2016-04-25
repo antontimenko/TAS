@@ -1,6 +1,6 @@
-#include "TSLexeme.h"
+#include "Lexeme.h"
 
-#include "TSException.h"
+#include "Exception.h"
 #include <ctype.h>
 
 const char cLF = 0xA;
@@ -33,8 +33,8 @@ bool isCharQuoteCompatible(char ch) {
     return quoteCompatibleChars.find(ch) != string::npos;
 }
 
-vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFileContents) {
-    vector<TSLexemeContainer> lexemeContainerVector;
+vector<LexemeContainer> constructLexemeContainerVector(const string &sourceFileContents) {
+    vector<LexemeContainer> lexemeContainerVector;
 
     string currentLexeme;
     size_t row = 1;
@@ -102,7 +102,7 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
 
                     currentLexeme += currentChar;
                 } else
-                    throw TSCompileError("Unknown character", {row, column, 1});
+                    throw CompileError("Unknown character", {row, column, 1});
             }
 
             ++column;
@@ -111,7 +111,7 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
 
     if (!currentLexeme.empty()) {
         if ((isCharQuoteCompatible(currentLexeme[0])) && (currentLexeme[0] != currentLexeme[currentLexeme.size() - 1]))
-            throw TSCompileError("Unclosed string detected", {currentLexemeRow, currentLexemeColumn, 1});
+            throw CompileError("Unclosed string detected", {currentLexemeRow, currentLexemeColumn, 1});
         
         lexemeContainerVector.push_back({currentLexemeRow, currentLexemeColumn, currentLexeme});
     }
@@ -119,8 +119,8 @@ vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFil
     return lexemeContainerVector;
 }
 
-vector<TSLexemeContainer> convertLexemeContainerVectorToUpperCase(vector<TSLexemeContainer> &lexemeContainerVector) {
-    vector<TSLexemeContainer> newLexemeContainerVector;
+vector<LexemeContainer> convertLexemeContainerVectorToUpperCase(vector<LexemeContainer> &lexemeContainerVector) {
+    vector<LexemeContainer> newLexemeContainerVector;
 
     for (auto it = lexemeContainerVector.begin(); it != lexemeContainerVector.end(); ++it) {
         if (!isCharQuoteCompatible(it->lexeme[0]) && !isCharQuoteCompatible(it->lexeme[it->lexeme.size() - 1])) {

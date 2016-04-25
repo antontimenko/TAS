@@ -1,24 +1,24 @@
-#include "TSSentence.h"
+#include "Sentence.h"
 
-#include "TSRawSentence.h"
-#include "TSInstruction.h"
-#include "TSException.h"
-#include "TSDiagnostics.h"
+#include "RawSentence.h"
+#include "Instruction.h"
+#include "Exception.h"
+#include "Diagnostics.h"
 #include <algorithm>
 
-using namespace TSOperandMask;
+using namespace OperandMask;
 
-vector<TSInstruction::Definition> findSuitableDefinitions(const TSInstructionSentence &instructionSentence) {
-    vector<TSInstruction::Definition> suitableDefinitions;
+vector<InstructionNS::Definition> findSuitableDefinitions(const InstructionSentence &instructionSentence) {
+    vector<InstructionNS::Definition> suitableDefinitions;
 
-    for (auto it = TSInstruction::instructionDefinitionVector.begin(); it != TSInstruction::instructionDefinitionVector.end(); ++it) {
+    for (auto it = InstructionNS::instructionDefinitionVector.begin(); it != InstructionNS::instructionDefinitionVector.end(); ++it) {
         if ((instructionSentence.instruction == it->instruction) &&
             (instructionSentence.operandContainerVector.size() == it->operandFullMasks.size()))
         {
             bool isSuitable = true;
             for (size_t i = 0; i < instructionSentence.operandContainerVector.size(); ++i) {
-                const TSOperandMask::Mask &opMask = get<0>(instructionSentence.operandContainerVector[i]).mask;
-                const TSOperandMask::Mask &defOpMask = it->operandFullMasks[i].mask;
+                const OperandMask::Mask &opMask = get<0>(instructionSentence.operandContainerVector[i]).mask;
+                const OperandMask::Mask &defOpMask = it->operandFullMasks[i].mask;
 
                 if ((!defOpMask.match(opMask)) ||
                     ((it->operandFullMasks[i].num) &&
@@ -37,10 +37,10 @@ vector<TSInstruction::Definition> findSuitableDefinitions(const TSInstructionSen
     return suitableDefinitions;
 }
 
-TSInstruction::Definition findMostSuitableDefinition(const TSInstructionSentence &instructionSentence, const vector<TSInstruction::Definition> &suitableDefinitions) {
-    auto getFullSuitableRank = [](const vector<TSInstructionSentence::OperandContainer> &operandContainerVector,
-                                  const TSInstruction::Definition definition) -> size_t {
-        auto getSuitableRank = [](const TSOperandMask::Mask &baseMask, const TSOperandMask::Mask &mask) -> size_t {
+InstructionNS::Definition findMostSuitableDefinition(const InstructionSentence &instructionSentence, const vector<InstructionNS::Definition> &suitableDefinitions) {
+    auto getFullSuitableRank = [](const vector<InstructionSentence::OperandContainer> &operandContainerVector,
+                                  const InstructionNS::Definition definition) -> size_t {
+        auto getSuitableRank = [](const OperandMask::Mask &baseMask, const OperandMask::Mask &mask) -> size_t {
             size_t rank = (baseMask ^ mask).count();
             
             if (mask.match(IMM))
@@ -58,7 +58,7 @@ TSInstruction::Definition findMostSuitableDefinition(const TSInstructionSentence
     };
 
     if (suitableDefinitions.empty())
-        throw TSCompileError("incorrect instruction or operand", instructionSentence.pos);
+        throw CompileError("incorrect instruction or operand", instructionSentence.pos);
 
     for (auto it = suitableDefinitions.begin(); it != suitableDefinitions.end(); ++it) {
         for (auto jt = it->operandFullMasks.begin(); jt != it->operandFullMasks.end(); ++jt) {
@@ -67,9 +67,9 @@ TSInstruction::Definition findMostSuitableDefinition(const TSInstructionSentence
         }
     }
 
-    TSInstruction::Definition mostSuitableDefinition = suitableDefinitions[0];
+    InstructionNS::Definition mostSuitableDefinition = suitableDefinitions[0];
 
-    const vector<TSInstructionSentence::OperandContainer> &operandContainerVector = instructionSentence.operandContainerVector;
+    const vector<InstructionSentence::OperandContainer> &operandContainerVector = instructionSentence.operandContainerVector;
     
     for (size_t i = 1; i < suitableDefinitions.size(); ++i) {
         if (getFullSuitableRank(operandContainerVector, suitableDefinitions[i]) < getFullSuitableRank(operandContainerVector, mostSuitableDefinition))
@@ -79,13 +79,13 @@ TSInstruction::Definition findMostSuitableDefinition(const TSInstructionSentence
     return mostSuitableDefinition;
 }
 
-vector<vector<uchar>> TSInstructionSentence::compute() const {
-    TSInstruction::Definition definition = findMostSuitableDefinition(*this, findSuitableDefinitions(*this));
+vector<vector<uchar>> InstructionSentence::compute() const {
+    InstructionNS::Definition definition = findMostSuitableDefinition(*this, findSuitableDefinitions(*this));
 
     return definition.computeFunc(definition, *this);
 }
 
-string TSInstructionSentence::Operand::present() const {
+string InstructionSentence::Operand::present() const {
     if (mask.match(UREG) || mask.match(SREG))
         return findByValue(registerMap, mask)->first;
     else if (mask.match(MEM)) {
@@ -166,7 +166,7 @@ string TSInstructionSentence::Operand::present() const {
         return num.str();
 }
 
-const map<TSInstructionSentence::SegmentPrefix, TSOperandMask::Mask> TSInstructionSentence::prefixToSegRegMap = {
+const map<InstructionSentence::SegmentPrefix, OperandMask::Mask> InstructionSentence::prefixToSegRegMap = {
     {SegmentPrefix::ES, ES},
     {SegmentPrefix::CS, CS},
     {SegmentPrefix::SS, SS},
@@ -175,8 +175,8 @@ const map<TSInstructionSentence::SegmentPrefix, TSOperandMask::Mask> TSInstructi
     {SegmentPrefix::GS, GS}
 };
 
-tuple<string, vector<string>> TSInstructionSentence::present() const {
-    string instructionStr = findByValue(TSInstruction::instructionMap, instruction)->first;
+tuple<string, vector<string>> InstructionSentence::present() const {
+    string instructionStr = findByValue(InstructionNS::instructionMap, instruction)->first;
 
     vector<string> operandStrVector;
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it) {
@@ -185,7 +185,7 @@ tuple<string, vector<string>> TSInstructionSentence::present() const {
         if (segmentPrefix) {
             if (get<0>(*it).mask.match(MEM)) {
                 Mask segRegPrefix = prefixToSegRegMap.find(*segmentPrefix)->second;
-                string segRegStr = findByValue(TSOperandMask::registerMap, segRegPrefix)->first;
+                string segRegStr = findByValue(OperandMask::registerMap, segRegPrefix)->first;
                 operandStr = segRegStr + ':' + operandStr;
             }
         }
@@ -196,19 +196,19 @@ tuple<string, vector<string>> TSInstructionSentence::present() const {
     return make_tuple(instructionStr, operandStrVector);
 }
 
-vector<vector<uchar>> TSDataSentence::compute() const {
+vector<vector<uchar>> DataSentence::compute() const {
     vector<vector<uchar>> res;
 
-    TSInteger::Size intSize;
+    Integer::Size intSize;
     switch (dataIdentifier) {
     case DataIdentifier::DB:
-        intSize = TSInteger::Size::S_8;
+        intSize = Integer::Size::S_8;
         break;
     case DataIdentifier::DW:
-        intSize = TSInteger::Size::S_16;
+        intSize = Integer::Size::S_16;
         break;
     case DataIdentifier::DD:
-        intSize = TSInteger::Size::S_32;
+        intSize = Integer::Size::S_32;
         break;
     }
 
@@ -220,8 +220,8 @@ vector<vector<uchar>> TSDataSentence::compute() const {
     return res;
 }
 
-tuple<string, vector<string>> TSDataSentence::present() const {
-    string instructionStr = findByValue(TSInstruction::dataIdentifierMap, dataIdentifier)->first;
+tuple<string, vector<string>> DataSentence::present() const {
+    string instructionStr = findByValue(InstructionNS::dataIdentifierMap, dataIdentifier)->first;
 
     vector<string> operandStrVector;
     for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it)
@@ -230,77 +230,77 @@ tuple<string, vector<string>> TSDataSentence::present() const {
     return make_tuple(instructionStr, operandStrVector);
 }
 
-shared_ptr<TSSentence> constructSentenceFromRaw(const TSRawSentence &rawSentence, vector<bool> linkVector = vector<bool>()) {
-    if (typeid(rawSentence) == typeid(TSRawInstructionSentence)) {
-        const TSRawInstructionSentence &rawInstructionSentence = static_cast<const TSRawInstructionSentence &>(rawSentence);
+shared_ptr<Sentence> constructSentenceFromRaw(const RawSentence &rawSentence, vector<bool> linkVector = vector<bool>()) {
+    if (typeid(rawSentence) == typeid(RawInstructionSentence)) {
+        const RawInstructionSentence &rawInstructionSentence = static_cast<const RawInstructionSentence &>(rawSentence);
 
-        vector<TSInstructionSentence::OperandContainer> operandContainerVector;
+        vector<InstructionSentence::OperandContainer> operandContainerVector;
         for (auto it = rawInstructionSentence.operandContainerVector.begin(); it != rawInstructionSentence.operandContainerVector.end(); ++it) {
-            const TSRawInstructionSentence::Operand &rawOperand = get<0>(*it);
+            const RawInstructionSentence::Operand &rawOperand = get<0>(*it);
             bool isLinkable = ((size_t)(it - rawInstructionSentence.operandContainerVector.begin()) < linkVector.size()) ? linkVector[it - rawInstructionSentence.operandContainerVector.begin()] : false;
             
             optional<string> segName = nullopt;
             if (rawOperand.rawNum.label)
                 segName = (*rawOperand.rawNum.label).segName;
 
-            operandContainerVector.push_back(TSInstructionSentence::OperandContainer({rawOperand.mask, rawOperand.rawNum.num, isLinkable, segName}, get<1>(*it)));
+            operandContainerVector.push_back(InstructionSentence::OperandContainer({rawOperand.mask, rawOperand.rawNum.num, isLinkable, segName}, get<1>(*it)));
         }
 
-        return shared_ptr<TSSentence>(new TSInstructionSentence(rawInstructionSentence.pos(),
+        return shared_ptr<Sentence>(new InstructionSentence(rawInstructionSentence.pos(),
                                                                 rawInstructionSentence.assume(),
                                                                 rawInstructionSentence.segmentPrefix,
                                                                 rawInstructionSentence.instruction,
                                                                 operandContainerVector));
     } else {
-        const TSRawDataSentence &rawDataSentence = static_cast<const TSRawDataSentence &>(rawSentence);
+        const RawDataSentence &rawDataSentence = static_cast<const RawDataSentence &>(rawSentence);
 
-        vector<TSDataSentence::OperandContainer> operandContainerVector;
+        vector<DataSentence::OperandContainer> operandContainerVector;
         for (auto it = rawDataSentence.operandContainerVector.begin(); it != rawDataSentence.operandContainerVector.end(); ++it) {
-            const TSRawDataSentence::Operand &rawOperand = get<0>(*it);
+            const RawDataSentence::Operand &rawOperand = get<0>(*it);
 
-            operandContainerVector.push_back(TSDataSentence::OperandContainer(rawOperand.num, get<1>(*it)));
+            operandContainerVector.push_back(DataSentence::OperandContainer(rawOperand.num, get<1>(*it)));
         }
 
-        return shared_ptr<TSSentence>(new TSDataSentence(rawDataSentence.pos(),
+        return shared_ptr<Sentence>(new DataSentence(rawDataSentence.pos(),
                                                          rawDataSentence.assume(),
                                                          rawDataSentence.dataIdentifier,
                                                          operandContainerVector));
     }
 }
 
-vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment> &rawSentencesSegmentContainerVector) {
-    auto instructionOperandImplicitSizeSetter = [](TSInstructionSentence::Operand &operand) {
+vector<SentencesSegment> constructSentences(const vector<RawSentencesSegment> &rawSentencesSegmentContainerVector) {
+    auto instructionOperandImplicitSizeSetter = [](InstructionSentence::Operand &operand) {
         if (operand.mask.match(IMM) && (!operand.mask.matchAny(S_ANY)))
             operand.mask |= Mask::operandSizeFromIntegerSize(operand.num.sizeAny());
         else if (operand.mask.match(REL) && (!operand.mask.matchAny(S_ANY)))
             operand.mask |= Mask::operandSizeFromIntegerSize(*operand.num.sizeSigned());
     };
 
-    auto instructionOperandSizeChecker = [](const TSInstructionSentence::OperandContainer &operandContainer) {
+    auto instructionOperandSizeChecker = [](const InstructionSentence::OperandContainer &operandContainer) {
         const auto &operand = get<0>(operandContainer);
 
         if ((operand.mask.match(IMM) && (operand.num.sizeAny() > Mask::integerSizeFromOperandSize(operand.mask))) ||
             (operand.mask.match(REL) && (*operand.num.sizeSigned() > Mask::integerSizeFromOperandSize(operand.mask))))
-            throw TSCompileError("overflow (constant size too large)", get<1>(operandContainer));
+            throw CompileError("overflow (constant size too large)", get<1>(operandContainer));
     };
 
-    auto dataOperandSizeChecker = [](const TSDataSentence::OperandContainer &operandContainer,
-                                     TSDataSentence::DataIdentifier dataIdentifier) {
-        TSInteger::Size suitableSize;
+    auto dataOperandSizeChecker = [](const DataSentence::OperandContainer &operandContainer,
+                                     DataSentence::DataIdentifier dataIdentifier) {
+        Integer::Size suitableSize;
         switch (dataIdentifier) {
-        case TSDataSentence::DataIdentifier::DB:
-            suitableSize = TSInteger::Size::S_8;
+        case DataSentence::DataIdentifier::DB:
+            suitableSize = Integer::Size::S_8;
             break;
-        case TSDataSentence::DataIdentifier::DW:
-            suitableSize = TSInteger::Size::S_16;
+        case DataSentence::DataIdentifier::DW:
+            suitableSize = Integer::Size::S_16;
             break;
-        case TSDataSentence::DataIdentifier::DD:
-            suitableSize = TSInteger::Size::S_32;
+        case DataSentence::DataIdentifier::DD:
+            suitableSize = Integer::Size::S_32;
             break;
         }
 
         if (get<0>(operandContainer).sizeAny() > suitableSize)
-            throw TSCompileError("overflow (constant size too large)", get<1>(operandContainer));
+            throw CompileError("overflow (constant size too large)", get<1>(operandContainer));
     };
 
     struct DispsSegmentContainer {
@@ -329,7 +329,7 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
 
         const string segName;
 
-        inline bool operator()(const TSRawSentencesSegment &rawSentencesSegmentContainer) {
+        inline bool operator()(const RawSentencesSegment &rawSentencesSegmentContainer) {
             return segName == rawSentencesSegmentContainer.segName;
         }
     };
@@ -343,7 +343,7 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
         return disp;
     };
 
-    auto getLinkVectorFromRawSentence = [](const TSRawInstructionSentence &rawInstructionSentence) -> vector<bool> {
+    auto getLinkVectorFromRawSentence = [](const RawInstructionSentence &rawInstructionSentence) -> vector<bool> {
         vector<bool> res;
 
         for (auto it = rawInstructionSentence.operandContainerVector.begin(); it != rawInstructionSentence.operandContainerVector.end(); ++it)
@@ -352,9 +352,9 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
         return res;
     };
 
-    typedef function<vector<DispsSegmentContainer>(vector<DispsSegmentContainer>, vector<TSRawSentencesSegment>::const_iterator)> recursiveSizeComputerT;
+    typedef function<vector<DispsSegmentContainer>(vector<DispsSegmentContainer>, vector<RawSentencesSegment>::const_iterator)> recursiveSizeComputerT;
     recursiveSizeComputerT recursiveSizeComputer = [&](vector<DispsSegmentContainer> dispsSegmentContainerVector,
-                                                       vector<TSRawSentencesSegment>::const_iterator segIt) -> vector<DispsSegmentContainer> {
+                                                       vector<RawSentencesSegment>::const_iterator segIt) -> vector<DispsSegmentContainer> {
         for (size_t i = 0; i < segIt->rawSentences.size(); ++i) {
             auto dispsSegmentContainerIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                         dispsSegmentContainerVector.end(),
@@ -364,21 +364,21 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
             if (dispVector[i])
                 continue;
 
-            shared_ptr<TSRawSentence> sentencePtr = segIt->rawSentences[i];
-            if (typeid(*sentencePtr) == typeid(TSRawInstructionSentence)) {
-                TSRawInstructionSentence &sourceRawInstructionSentence = static_cast<TSRawInstructionSentence &>(*sentencePtr);
-                TSRawInstructionSentence rawInstructionSentence = sourceRawInstructionSentence;
+            shared_ptr<RawSentence> sentencePtr = segIt->rawSentences[i];
+            if (typeid(*sentencePtr) == typeid(RawInstructionSentence)) {
+                RawInstructionSentence &sourceRawInstructionSentence = static_cast<RawInstructionSentence &>(*sentencePtr);
+                RawInstructionSentence rawInstructionSentence = sourceRawInstructionSentence;
                 auto &rawOperandContainerVector = rawInstructionSentence.operandContainerVector;
 
-                if (TSInstruction::jumpInstructionsSet.count(rawInstructionSentence.instruction) &&
+                if (InstructionNS::jumpInstructionsSet.count(rawInstructionSentence.instruction) &&
                     (rawOperandContainerVector.size() == 1) &&
                     get<0>(rawOperandContainerVector[0]).mask.match(REL))
                 {
-                    TSRawInstructionSentence::Operand jmpRawOperand = get<0>(rawOperandContainerVector[0]);
+                    RawInstructionSentence::Operand jmpRawOperand = get<0>(rawOperandContainerVector[0]);
 
                     if (!jmpRawOperand.rawNum.isNotFinal) {
-                        shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence);
-                        TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
+                        shared_ptr<Sentence> sentence = constructSentenceFromRaw(rawInstructionSentence);
+                        InstructionSentence &instructionSentence = static_cast<InstructionSentence &>(*sentence);
                         auto &operandContainerVector = instructionSentence.operandContainerVector;
                         auto &jmpOperandContainer = operandContainerVector[0];
                         auto &jmpOperand = get<0>(jmpOperandContainer);
@@ -387,21 +387,21 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
 
                         dispVector[i] = getInstructionBytePresentSize(instructionSentence.compute());
                     } else {
-                        TSLabel labelTo = *jmpRawOperand.rawNum.label;
-                        TSLabel labelFrom = {nullopt, i + 1, segIt->segName};
+                        Label labelTo = *jmpRawOperand.rawNum.label;
+                        Label labelFrom = {nullopt, i + 1, segIt->segName};
 
                         bool sizeComputed = false;
-                        for (TSInteger::Size innerRelSize = TSInteger::Size::S_8; innerRelSize != TSInteger::Size::S_64; innerRelSize = TSInteger::nextSize(innerRelSize)) {
-                            TSRawInstructionSentence innerRawInstructionSentence = rawInstructionSentence;
+                        for (Integer::Size innerRelSize = Integer::Size::S_8; innerRelSize != Integer::Size::S_64; innerRelSize = Integer::nextSize(innerRelSize)) {
+                            RawInstructionSentence innerRawInstructionSentence = rawInstructionSentence;
                             auto &innerRawOperandContainerVector = innerRawInstructionSentence.operandContainerVector;
                             auto &innerRawJmpOperandContainer= innerRawOperandContainerVector[0];
                             auto &innerRawJmpOperand = get<0>(innerRawJmpOperandContainer);
 
-                            innerRawJmpOperand.rawNum.num = TSInteger::getMaxValSigned(innerRelSize);
+                            innerRawJmpOperand.rawNum.num = Integer::getMaxValSigned(innerRelSize);
                             innerRawJmpOperand.rawNum.isNotFinal = false;
 
-                            shared_ptr<TSSentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence);
-                            TSInstructionSentence &innerInstructionSentence = static_cast<TSInstructionSentence &>(*innerSentence);
+                            shared_ptr<Sentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence);
+                            InstructionSentence &innerInstructionSentence = static_cast<InstructionSentence &>(*innerSentence);
                             auto &innerOperandContainerVector = innerInstructionSentence.operandContainerVector;
                             auto &innerJmpOperandContainer = innerOperandContainerVector[0];
                             auto &innerJmpOperand = get<0>(innerJmpOperandContainer);
@@ -428,15 +428,15 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                                                                innerDispsSegmentContainerVector.end(),
                                                                DispsSegmentFinder(segIt->segName));
 
-                                TSInteger curInnerLabelToDisp = computeDisp(innerSegIt->dispVector.begin(),
+                                Integer curInnerLabelToDisp = computeDisp(innerSegIt->dispVector.begin(),
                                                                             innerSegIt->dispVector.begin() + labelTo.ptr);
-                                TSInteger curInnerLabelFromDisp = computeDisp(innerSegIt->dispVector.begin(),
+                                Integer curInnerLabelFromDisp = computeDisp(innerSegIt->dispVector.begin(),
                                                                               innerSegIt->dispVector.begin() + labelFrom.ptr);
-                                TSInteger curInnerRel = curInnerLabelToDisp + jmpRawOperand.rawNum.num - curInnerLabelFromDisp;
+                                Integer curInnerRel = curInnerLabelToDisp + jmpRawOperand.rawNum.num - curInnerLabelFromDisp;
 
-                                TSInteger::Size curInnerOpSize = *curInnerRel.sizeSigned();
+                                Integer::Size curInnerOpSize = *curInnerRel.sizeSigned();
 
-                                TSInteger::Size curInnerNeedOpSize = innerRelSize;
+                                Integer::Size curInnerNeedOpSize = innerRelSize;
 
                                 if (curInnerOpSize <= curInnerNeedOpSize) {
                                     dispsSegmentContainerVector = innerDispsSegmentContainerVector;
@@ -447,16 +447,16 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                         }
 
                         if (!sizeComputed)
-                            throw TSCompileError("incorrect instruction or operand", rawInstructionSentence.pos());
+                            throw CompileError("incorrect instruction or operand", rawInstructionSentence.pos());
                     }
                 } else {
-                    vector<TSRawInstructionSentence::OperandContainer *> rawOperandContainerDependVector;
+                    vector<RawInstructionSentence::OperandContainer *> rawOperandContainerDependVector;
                     
-                    if (TSInstruction::jumpInstructionsSet.count(rawInstructionSentence.instruction) &&
+                    if (InstructionNS::jumpInstructionsSet.count(rawInstructionSentence.instruction) &&
                         (rawOperandContainerVector.size() == 1) &&
                         get<0>(rawOperandContainerVector[0]).mask.match(REL))
                     {
-                        TSRawInstructionSentence::Operand &operand = get<0>(rawOperandContainerVector[0]);
+                        RawInstructionSentence::Operand &operand = get<0>(rawOperandContainerVector[0]);
 
                         if (operand.rawNum.isNotFinal)
                             rawOperandContainerDependVector.push_back(&rawOperandContainerVector[0]);
@@ -468,7 +468,7 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                     }
 
                     for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end();) {
-                        TSRawInstructionSentence::Operand &operand = get<0>(**it);
+                        RawInstructionSentence::Operand &operand = get<0>(**it);
 
                         auto curLabelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                           dispsSegmentContainerVector.end(),
@@ -496,8 +496,8 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                     }
 
                     if (rawOperandContainerDependVector.empty()) {
-                        shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
-                        TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
+                        shared_ptr<Sentence> sentence = constructSentenceFromRaw(rawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
+                        InstructionSentence &instructionSentence = static_cast<InstructionSentence &>(*sentence);
                         auto &operandContainerVector = instructionSentence.operandContainerVector;
                         
                         for (auto it = operandContainerVector.begin(); it != operandContainerVector.end(); ++it) {
@@ -507,17 +507,17 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
 
                         dispVector[i] = getInstructionBytePresentSize(instructionSentence.compute());
                     } else {
-                        vector<TSLabel> labelDependVector;
+                        vector<Label> labelDependVector;
                         for (auto it = rawOperandContainerDependVector.begin(); it != rawOperandContainerDependVector.end(); ++it) {
                             if (std::find(labelDependVector.begin(), labelDependVector.end(), *get<0>(**it).rawNum.label) == labelDependVector.end())
                                 labelDependVector.push_back(*get<0>(**it).rawNum.label);
                         }
 
-                        vector<TSInteger::Size> operandSizeDependVector(rawOperandContainerDependVector.size(), TSInteger::Size::S_8);
+                        vector<Integer::Size> operandSizeDependVector(rawOperandContainerDependVector.size(), Integer::Size::S_8);
 
                         bool sizeComputed = false;
                         while (true) {
-                            TSRawInstructionSentence innerRawInstructionSentence = rawInstructionSentence;
+                            RawInstructionSentence innerRawInstructionSentence = rawInstructionSentence;
                             auto &innerRawOperandContainerVector = innerRawInstructionSentence.operandContainerVector;
 
                             for (auto it = innerRawOperandContainerVector.begin(); it != innerRawOperandContainerVector.end(); ++it) {
@@ -528,15 +528,15 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                                     auto currSize = operandSizeDependVector[currLabelDependIt - labelDependVector.begin()];
 
                                     if (get<0>(*it).mask.match(MEM))
-                                        get<0>(*it).rawNum.num = TSInteger::getMaxValSigned(currSize);
+                                        get<0>(*it).rawNum.num = Integer::getMaxValSigned(currSize);
                                     else
-                                        get<0>(*it).rawNum.num = TSInteger::getMaxValAny(currSize);
+                                        get<0>(*it).rawNum.num = Integer::getMaxValAny(currSize);
                                     get<0>(*it).rawNum.isNotFinal = false;
                                 }                            
                             }
 
-                            shared_ptr<TSSentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
-                            TSInstructionSentence &innerInstructionSentence = static_cast<TSInstructionSentence &>(*innerSentence);
+                            shared_ptr<Sentence> innerSentence = constructSentenceFromRaw(innerRawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
+                            InstructionSentence &innerInstructionSentence = static_cast<InstructionSentence &>(*innerSentence);
                             auto &innerOperandContainerVector = innerInstructionSentence.operandContainerVector;
 
                             for (auto it = innerOperandContainerVector.begin(); it != innerOperandContainerVector.end(); ++it) {
@@ -568,13 +568,13 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                                     auto innerSegIt = std::find_if(innerDispsSegmentContainerVector.begin(),
                                                                    innerDispsSegmentContainerVector.end(),
                                                                    DispsSegmentFinder(get<0>(**it).rawNum.label->segName));
-                                    TSInteger curInnerLabelDisp = computeDisp(innerSegIt->dispVector.begin(),
+                                    Integer curInnerLabelDisp = computeDisp(innerSegIt->dispVector.begin(),
                                                                               innerSegIt->dispVector.begin() + get<0>(**it).rawNum.label->ptr);
-                                    TSInteger curInnerOpNum = get<0>(**it).rawNum.num + curInnerLabelDisp;
+                                    Integer curInnerOpNum = get<0>(**it).rawNum.num + curInnerLabelDisp;
 
-                                    TSInteger::Size curInnerOpSize = get<0>(**it).mask.match(MEM) ? *curInnerOpNum.sizeSigned() : curInnerOpNum.sizeAny();
+                                    Integer::Size curInnerOpSize = get<0>(**it).mask.match(MEM) ? *curInnerOpNum.sizeSigned() : curInnerOpNum.sizeAny();
 
-                                    TSInteger::Size curInnerNeedOpSize = operandSizeDependVector[it - rawOperandContainerDependVector.begin()];
+                                    Integer::Size curInnerNeedOpSize = operandSizeDependVector[it - rawOperandContainerDependVector.begin()];
 
                                     if (curInnerOpSize > curInnerNeedOpSize) {
                                         sizeSuites = false;
@@ -589,37 +589,37 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                                 break;
                             }
 
-                            if ((size_t)std::count(operandSizeDependVector.begin(), operandSizeDependVector.end(), TSInteger::Size::S_64) == operandSizeDependVector.size())
+                            if ((size_t)std::count(operandSizeDependVector.begin(), operandSizeDependVector.end(), Integer::Size::S_64) == operandSizeDependVector.size())
                                 break;
 
                             auto it = operandSizeDependVector.end() - 1;
                             do {
-                                if (*it != TSInteger::Size::S_64) {
-                                    *it = TSInteger::nextSize(*it);
+                                if (*it != Integer::Size::S_64) {
+                                    *it = Integer::nextSize(*it);
                                     break;
                                 } else {
-                                    *it = TSInteger::Size::S_8;
+                                    *it = Integer::Size::S_8;
                                 }
                             } while (it != operandSizeDependVector.begin());
                         }
 
                         if (!sizeComputed)
-                            throw TSCompileError("incorrect instruction or operand", rawInstructionSentence.pos());
+                            throw CompileError("incorrect instruction or operand", rawInstructionSentence.pos());
                     }
                 }
             } else {
-                TSRawDataSentence rawDataSentence = static_cast<TSRawDataSentence &>(*sentencePtr);
+                RawDataSentence rawDataSentence = static_cast<RawDataSentence &>(*sentencePtr);
                 auto &rawOperandContainerVector = rawDataSentence.operandContainerVector;
 
                 size_t mult;
                 switch (rawDataSentence.dataIdentifier) {
-                case TSRawDataSentence::DataIdentifier::DB:
+                case RawDataSentence::DataIdentifier::DB:
                     mult = 1;
                     break;
-                case TSRawDataSentence::DataIdentifier::DW:
+                case RawDataSentence::DataIdentifier::DW:
                     mult = 2;
                     break;
-                case TSRawDataSentence::DataIdentifier::DD:
+                case RawDataSentence::DataIdentifier::DD:
                     mult = 4;
                     break;
                 }
@@ -638,28 +638,28 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
     for (auto it = rawSentencesSegmentContainerVector.begin(); it != rawSentencesSegmentContainerVector.end(); ++it)
         dispsSegmentContainerVector = recursiveSizeComputer(dispsSegmentContainerVector, it);
 
-    vector<TSSentencesSegment> sentencesSegmentContainer;
+    vector<SentencesSegment> sentencesSegmentContainer;
 
     for (auto it = rawSentencesSegmentContainerVector.begin(); it != rawSentencesSegmentContainerVector.end(); ++it) {
-        vector<shared_ptr<TSSentence>> sentenceVector;
+        vector<shared_ptr<Sentence>> sentenceVector;
         const string &segName = it->segName;
-        const vector<shared_ptr<TSRawSentence>> &rawSentenceVector = it->rawSentences;
+        const vector<shared_ptr<RawSentence>> &rawSentenceVector = it->rawSentences;
 
         for (auto jt = rawSentenceVector.begin(); jt != rawSentenceVector.end(); ++jt) {
-            if (typeid(**jt) == typeid(TSRawInstructionSentence)) {
-                const TSRawInstructionSentence &sourceRawInstructionSentence = static_cast<const TSRawInstructionSentence &>(**jt);
-                TSRawInstructionSentence rawInstructionSentence = sourceRawInstructionSentence;
+            if (typeid(**jt) == typeid(RawInstructionSentence)) {
+                const RawInstructionSentence &sourceRawInstructionSentence = static_cast<const RawInstructionSentence &>(**jt);
+                RawInstructionSentence rawInstructionSentence = sourceRawInstructionSentence;
                 auto &rawOperandContainerVector = rawInstructionSentence.operandContainerVector;
 
                 for (auto kt = rawOperandContainerVector.begin(); kt != rawOperandContainerVector.end(); ++kt) {
-                    TSRawInstructionSentence::OperandContainer &rawOperandContainer = *kt;
-                    TSRawInstructionSentence::Operand &rawOperand = get<0>(rawOperandContainer);
+                    RawInstructionSentence::OperandContainer &rawOperandContainer = *kt;
+                    RawInstructionSentence::Operand &rawOperand = get<0>(rawOperandContainer);
 
                     if (rawOperand.rawNum.isNotFinal) {
                         auto labelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                        dispsSegmentContainerVector.end(),
                                                        DispsSegmentFinder(rawOperand.rawNum.label->segName));
-                        TSInteger labelVal = computeDisp(labelSegIt->dispVector.begin(),
+                        Integer labelVal = computeDisp(labelSegIt->dispVector.begin(),
                                                          labelSegIt->dispVector.begin() + rawOperand.rawNum.label->ptr);
 
                         rawOperand.rawNum.num += labelVal;
@@ -671,9 +671,9 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
                     }
                 }
 
-                shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
+                shared_ptr<Sentence> sentence = constructSentenceFromRaw(rawInstructionSentence, getLinkVectorFromRawSentence(sourceRawInstructionSentence));
 
-                TSInstructionSentence &instructionSentence = static_cast<TSInstructionSentence &>(*sentence);
+                InstructionSentence &instructionSentence = static_cast<InstructionSentence &>(*sentence);
                 auto &operandContainerVector = instructionSentence.operandContainerVector;
 
                 for (auto kt = operandContainerVector.begin(); kt != operandContainerVector.end(); ++kt) {
@@ -683,28 +683,28 @@ vector<TSSentencesSegment> constructSentences(const vector<TSRawSentencesSegment
 
                 sentenceVector.push_back(sentence);
             } else {
-                TSRawDataSentence rawDataSentence = static_cast<const TSRawDataSentence &>(**jt);
+                RawDataSentence rawDataSentence = static_cast<const RawDataSentence &>(**jt);
                 auto &rawOperandContainerVector = rawDataSentence.operandContainerVector;
 
                 for (auto kt = rawOperandContainerVector.begin(); kt != rawOperandContainerVector.end(); ++kt) {
-                    TSRawDataSentence::OperandContainer &rawOperandContainer = *kt;
-                    TSRawDataSentence::Operand &rawOperand = get<0>(rawOperandContainer);
+                    RawDataSentence::OperandContainer &rawOperandContainer = *kt;
+                    RawDataSentence::Operand &rawOperand = get<0>(rawOperandContainer);
 
                     if (rawOperand.label) {
                         auto labelSegIt = std::find_if(dispsSegmentContainerVector.begin(),
                                                        dispsSegmentContainerVector.end(),
                                                        DispsSegmentFinder(rawOperand.label->segName));
 
-                        TSInteger labelVal = computeDisp(labelSegIt->dispVector.begin(),
+                        Integer labelVal = computeDisp(labelSegIt->dispVector.begin(),
                                                          labelSegIt->dispVector.begin() + rawOperand.label->ptr);
                     
                         rawOperand.num += labelVal;
                     }
                 }
 
-                shared_ptr<TSSentence> sentence = constructSentenceFromRaw(rawDataSentence);
+                shared_ptr<Sentence> sentence = constructSentenceFromRaw(rawDataSentence);
 
-                TSDataSentence &dataSentence = static_cast<TSDataSentence &>(*sentence);
+                DataSentence &dataSentence = static_cast<DataSentence &>(*sentence);
                 auto &operandContainerVector = dataSentence.operandContainerVector;
 
                 for (auto kt = operandContainerVector.begin(); kt != operandContainerVector.end(); ++kt)

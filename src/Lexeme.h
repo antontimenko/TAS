@@ -1,7 +1,7 @@
-#ifndef _TSLEXEME_H_
-#define _TSLEXEME_H_
+#ifndef _LEXEME_H_
+#define _LEXEME_H_
 
-#include "TSGlobal.h"
+#include "Global.h"
 
 extern const char cLF;
 extern const char cCR;
@@ -12,13 +12,13 @@ bool isCharSingleCharacterLexemeCompatible(char ch);
 bool isCharLexemeDistributorCompatible(char ch);
 bool isCharQuoteCompatible(char ch);
 
-struct TSLexemeContainer {
+struct LexemeContainer {
     const size_t row;
     const size_t column;
     const string lexeme;
 };
 
-vector<TSLexemeContainer> constructLexemeContainerVector(const string &sourceFileContents);
-vector<TSLexemeContainer> convertLexemeContainerVectorToUpperCase(vector<TSLexemeContainer> &lexemeContainerVector);
+vector<LexemeContainer> constructLexemeContainerVector(const string &sourceFileContents);
+vector<LexemeContainer> convertLexemeContainerVectorToUpperCase(vector<LexemeContainer> &lexemeContainerVector);
 
 #endif

@@ -1,13 +1,13 @@
-#ifndef _TSTOKEN_H_
-#define _TSTOKEN_H_
+#ifndef _TOKEN_H_
+#define _TOKEN_H_
 
-#include "TSGlobal.h"
-#include "TSCodePosition.h"
-#include "TSLexeme.h"
-#include "TSUniquePtr.h"
-#include "TSInstruction.h"
+#include "Global.h"
+#include "CodePosition.h"
+#include "Lexeme.h"
+#include "UniquePtr.h"
+#include "Instruction.h"
 
-class TSToken {
+class Token {
 public:
     enum class Type {
         USER_IDENTIFIER,
@@ -49,9 +49,9 @@ public:
         ENDS
     };
 
-    typedef TSInstruction::Instruction Instruction;
+    typedef InstructionNS::Instruction Instruction;
 
-    typedef TSOperandMask::Mask Register;
+    typedef OperandMask::Mask Register;
 
     enum class SizeIdentifier {
         BYTE,
@@ -59,7 +59,7 @@ public:
         DWORD
     };
 
-    typedef TSInstruction::DataIdentifier DataIdentifier;
+    typedef InstructionNS::DataIdentifier DataIdentifier;
 
     enum class ConditionDirective {
         IF,
@@ -77,25 +77,25 @@ public:
     };
 
     template<typename T>
-    inline TSToken(Type tokenType, T value) :
+    inline Token(Type tokenType, T value) :
         _type(tokenType),
         valueP(new T(value))
     {}
 
-    inline TSToken(Type tokenType) :
-        TSToken(tokenType, nullptr)
+    inline Token(Type tokenType) :
+        Token(tokenType, nullptr)
     {}
 
-    inline TSToken() :
-        TSToken(Type::USER_IDENTIFIER)
+    inline Token() :
+        Token(Type::USER_IDENTIFIER)
     {}
 
-    inline TSToken(const TSToken &token) :
+    inline Token(const Token &token) :
         _type(token._type),
         valueP(token.valueP.copy())
     {}
 
-    inline TSToken &operator=(const TSToken &token) {
+    inline Token &operator=(const Token &token) {
         _type = token._type;
         valueP = token.valueP.copy();
 
@@ -128,18 +128,18 @@ public:
     static const string assumeDirectiveStr;
 private:
     Type _type;
-    TSUniquePtr<void> valueP;
+    UniquePtr<void> valueP;
 };
 
-class TSTokenContainer {
+class TokenContainer {
 public:
-    TSCodePosition pos;
-    TSToken token;
-    inline bool operator==(const TSTokenContainer &tokenContainer) const {
+    CodePosition pos;
+    Token token;
+    inline bool operator==(const TokenContainer &tokenContainer) const {
         return pos == tokenContainer.pos;
     }
 };
 
-vector<TSTokenContainer> constructTokenContainerVector(vector<TSLexemeContainer> &lexemeContainerVector);
+vector<TokenContainer> constructTokenContainerVector(vector<LexemeContainer> &lexemeContainerVector);
 
 #endif

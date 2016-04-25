@@ -1,38 +1,38 @@
-#include "TSDiagnostics.h"
+#include "Diagnostics.h"
 
 #include <iostream>
 #include <iomanip>
 #include <sstream>
 
-const map<TSToken::Type, string> tokenTypeDescriptionMap = {
-    {TSToken::Type::USER_IDENTIFIER, "User Identifier"},
-    {TSToken::Type::MEMORY_BRACKET, "Memory Bracket"},
-    {TSToken::Type::MATH_SYMBOL, "Math Symbol"},
-    {TSToken::Type::COMMA, "Comma"},
-    {TSToken::Type::COLON, "Colon"},
-    {TSToken::Type::SEGMENT_DIRECTIVE, "Segment Directive"},
-    {TSToken::Type::INSTRUCTION, "Instruction"},
-    {TSToken::Type::REGISTER, "Register"},
-    {TSToken::Type::SIZE_IDENTIFIER, "Size Identifier"},
-    {TSToken::Type::DATA_IDENTIFIER, "Data Identifier"},
-    {TSToken::Type::CONSTANT_NUMBER, "Constant Number"},
-    {TSToken::Type::CONSTANT_STRING, "Constant String"},
-    {TSToken::Type::CONDITION_DIRECTIVE, "Condition Directive"},
-    {TSToken::Type::CONDITION, "Condition"},
-    {TSToken::Type::SIZE_OPERATOR, "Size Operator"},
-    {TSToken::Type::EQU_DIRECTIVE, "EQU Directive"},
-    {TSToken::Type::END_DIRECTIVE, "END Directive"},
-    {TSToken::Type::ASSUME_DIRECTIVE, "ASSUME Directive"}
+const map<Token::Type, string> tokenTypeDescriptionMap = {
+    {Token::Type::USER_IDENTIFIER, "User Identifier"},
+    {Token::Type::MEMORY_BRACKET, "Memory Bracket"},
+    {Token::Type::MATH_SYMBOL, "Math Symbol"},
+    {Token::Type::COMMA, "Comma"},
+    {Token::Type::COLON, "Colon"},
+    {Token::Type::SEGMENT_DIRECTIVE, "Segment Directive"},
+    {Token::Type::INSTRUCTION, "Instruction"},
+    {Token::Type::REGISTER, "Register"},
+    {Token::Type::SIZE_IDENTIFIER, "Size Identifier"},
+    {Token::Type::DATA_IDENTIFIER, "Data Identifier"},
+    {Token::Type::CONSTANT_NUMBER, "Constant Number"},
+    {Token::Type::CONSTANT_STRING, "Constant String"},
+    {Token::Type::CONDITION_DIRECTIVE, "Condition Directive"},
+    {Token::Type::CONDITION, "Condition"},
+    {Token::Type::SIZE_OPERATOR, "Size Operator"},
+    {Token::Type::EQU_DIRECTIVE, "EQU Directive"},
+    {Token::Type::END_DIRECTIVE, "END Directive"},
+    {Token::Type::ASSUME_DIRECTIVE, "ASSUME Directive"}
 };
 
 void printError(string text) {
-    cout << TSColor::BWhite << text << TSColor::Reset << endl;
+    cout << Color::BWhite << text << Color::Reset << endl;
 }
 
-void printCompileError(string text, const string &sourceFileContents, TSCodePosition pos) {
-    cout << TSColor::BWhite << flush;
+void printCompileError(string text, const string &sourceFileContents, CodePosition pos) {
+    cout << Color::BWhite << flush;
 
-    cout << TSColor::BRed << "Compile Error" << TSColor::BWhite << " ("
+    cout << Color::BRed << "Compile Error" << Color::BWhite << " ("
          << pos.row << ":"
          << pos.column << "): "
          << text << endl;
@@ -55,9 +55,9 @@ void printCompileError(string text, const string &sourceFileContents, TSCodePosi
     j = 1;
     while ((sourceFileContents[i] != cCR) && (sourceFileContents[i] != cLF) && (i < sourceFileContents.size())) {
         if (j == pos.column)
-            cout << TSColor::BRed << flush;
+            cout << Color::BRed << flush;
         else if (j == pos.column + pos.length)
-            cout << TSColor::BWhite << flush;
+            cout << Color::BWhite << flush;
 
         if (sourceFileContents[i] == 0x9)
             cout << "    ";
@@ -80,83 +80,83 @@ void printCompileError(string text, const string &sourceFileContents, TSCodePosi
         ++i;
         ++j;
     }
-    cout << TSColor::BGreen << "^" << TSColor::BWhite << endl;
+    cout << Color::BGreen << "^" << Color::BWhite << endl;
 
-    cout << TSColor::Reset << flush;
+    cout << Color::Reset << flush;
 }
 
-string getTokenString(const TSToken &token) {
+string getTokenString(const Token &token) {
     string returnString;
 
     switch (token.type()) {
-    case TSToken::Type::USER_IDENTIFIER:
+    case Token::Type::USER_IDENTIFIER:
         returnString = token.value<string>();
         break;
-    case TSToken::Type::MEMORY_BRACKET:
-        returnString = findByValue(TSToken::memoryBracketMap, token.value<TSToken::MemoryBracket>())->first;
+    case Token::Type::MEMORY_BRACKET:
+        returnString = findByValue(Token::memoryBracketMap, token.value<Token::MemoryBracket>())->first;
         break;
-    case TSToken::Type::MATH_SYMBOL:
-        returnString = findByValue(TSToken::mathSymbolMap, token.value<TSToken::MathSymbol>())->first;
+    case Token::Type::MATH_SYMBOL:
+        returnString = findByValue(Token::mathSymbolMap, token.value<Token::MathSymbol>())->first;
         break;
-    case TSToken::Type::SEGMENT_DIRECTIVE:
-        returnString = findByValue(TSToken::segmentDirectiveMap, token.value<TSToken::SegmentDirective>())->first;
+    case Token::Type::SEGMENT_DIRECTIVE:
+        returnString = findByValue(Token::segmentDirectiveMap, token.value<Token::SegmentDirective>())->first;
         break;
-    case TSToken::Type::INSTRUCTION:
-        returnString = findByValue(TSToken::instructionMap, token.value<TSToken::Instruction>())->first;
+    case Token::Type::INSTRUCTION:
+        returnString = findByValue(Token::instructionMap, token.value<Token::Instruction>())->first;
         break;
-    case TSToken::Type::REGISTER:
-        returnString = findByValue(TSToken::registerMap, token.value<TSToken::Register>())->first;
+    case Token::Type::REGISTER:
+        returnString = findByValue(Token::registerMap, token.value<Token::Register>())->first;
         break;
-    case TSToken::Type::SIZE_IDENTIFIER:
-        returnString = findByValue(TSToken::sizeIdentifierMap, token.value<TSToken::SizeIdentifier>())->first;
+    case Token::Type::SIZE_IDENTIFIER:
+        returnString = findByValue(Token::sizeIdentifierMap, token.value<Token::SizeIdentifier>())->first;
         break;
-    case TSToken::Type::DATA_IDENTIFIER:
-        returnString = findByValue(TSToken::dataIdentifierMap, token.value<TSToken::DataIdentifier>())->first;
+    case Token::Type::DATA_IDENTIFIER:
+        returnString = findByValue(Token::dataIdentifierMap, token.value<Token::DataIdentifier>())->first;
         break;
-    case TSToken::Type::CONSTANT_NUMBER:
-        returnString = token.value<TSInteger>().str();
+    case Token::Type::CONSTANT_NUMBER:
+        returnString = token.value<Integer>().str();
         break;
-    case TSToken::Type::CONSTANT_STRING:
+    case Token::Type::CONSTANT_STRING:
         returnString = token.value<string>();
         break;
-    case TSToken::Type::CONDITION_DIRECTIVE:
-        returnString = findByValue(TSToken::conditionDirectiveMap, token.value<TSToken::ConditionDirective>())->first;
+    case Token::Type::CONDITION_DIRECTIVE:
+        returnString = findByValue(Token::conditionDirectiveMap, token.value<Token::ConditionDirective>())->first;
         break;
-    case TSToken::Type::CONDITION:
-        returnString = findByValue(TSToken::conditionMap, token.value<TSToken::Condition>())->first;
+    case Token::Type::CONDITION:
+        returnString = findByValue(Token::conditionMap, token.value<Token::Condition>())->first;
         break;
-    case TSToken::Type::COMMA:
-        returnString = TSToken::commaStr;
+    case Token::Type::COMMA:
+        returnString = Token::commaStr;
         break;
-    case TSToken::Type::COLON:
-        returnString = TSToken::colonStr;
+    case Token::Type::COLON:
+        returnString = Token::colonStr;
         break;
-    case TSToken::Type::SIZE_OPERATOR:
-        returnString = TSToken::sizeOperatorStr;
+    case Token::Type::SIZE_OPERATOR:
+        returnString = Token::sizeOperatorStr;
         break;
-    case TSToken::Type::EQU_DIRECTIVE:
-        returnString = TSToken::equDirectiveStr;
+    case Token::Type::EQU_DIRECTIVE:
+        returnString = Token::equDirectiveStr;
         break;
-    case TSToken::Type::END_DIRECTIVE:
-        returnString = TSToken::endDirectiveStr;
+    case Token::Type::END_DIRECTIVE:
+        returnString = Token::endDirectiveStr;
         break;
-    case TSToken::Type::ASSUME_DIRECTIVE:
-        returnString = TSToken::assumeDirectiveStr;
+    case Token::Type::ASSUME_DIRECTIVE:
+        returnString = Token::assumeDirectiveStr;
     }
 
     return returnString;
 }
 
-string getTokenDescription(const TSToken &token) {
+string getTokenDescription(const Token &token) {
     string res = tokenTypeDescriptionMap.find(token.type())->second;
 
-    if (token.type() == TSToken::Type::REGISTER) {
-        TSToken::Register reg = token.value<TSToken::Register>();
+    if (token.type() == Token::Type::REGISTER) {
+        Token::Register reg = token.value<Token::Register>();
 
-        if (reg.match(TSOperandMask::UREG)) {
-            if (reg.match(TSOperandMask::S8))
+        if (reg.match(OperandMask::UREG)) {
+            if (reg.match(OperandMask::S8))
                 res += " 8";
-            else if (reg.match(TSOperandMask::S16))
+            else if (reg.match(OperandMask::S16))
                 res += " 16";
             else
                 res += " 32";
@@ -197,7 +197,7 @@ void printSpace(size_t ammount) {
 }
 
 void printTable(string name, const vector<vector<string>> &data) {
-    cout << TSColor::BWhite << flush;
+    cout << Color::BWhite << flush;
 
     vector<size_t> maxWidthVector(data.size());
     for (size_t i = 0; i < data.size(); ++i)
@@ -268,10 +268,10 @@ void printTable(string name, const vector<vector<string>> &data) {
     }
     cout << tch5 << endl;
 
-    cout << TSColor::Reset << flush;
+    cout << Color::Reset << flush;
 }
 
-void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector) {
+void printTokenTable(const vector<TokenContainer> &tokenContainerVector) {
     vector<string> strIndexVector{"Index"};
     vector<string> strCoordsVector{"Coords"};
     vector<string> strTokenVector{"Name"};
@@ -287,7 +287,7 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector) {
     printTable("Lexeme Table", {strIndexVector, strCoordsVector, strTokenVector, strTokenDescriptionVector});
 }
 
-void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const vector<TSLexemeContainer> &lexemeContainerVector)
+void printTokenTable(const vector<TokenContainer> &tokenContainerVector, const vector<LexemeContainer> &lexemeContainerVector)
 {
     vector<string> strIndexVector{"Index"};
     vector<string> strCoordsVector{"Coords"};
@@ -304,7 +304,7 @@ void printTokenTable(const vector<TSTokenContainer> &tokenContainerVector, const
     printTable("Native Lexeme Table", {strIndexVector, strCoordsVector, strTokenVector, strTokenDescriptionVector});
 }
 
-void printEquTable(const map<string, TSInteger> &equMap) {
+void printEquTable(const map<string, Integer> &equMap) {
     vector<string> strNameVector{"Name"};
     vector<string> strValueVector{"Value"};
 
@@ -316,7 +316,7 @@ void printEquTable(const map<string, TSInteger> &equMap) {
     printTable("EQU Table", {strNameVector, strValueVector});
 }
 
-void printPseudoLabelTable(const map<string, TSLabel> &labelMap) {
+void printPseudoLabelTable(const map<string, Label> &labelMap) {
     vector<string> strNameVector{"Name"};
     vector<string> strTypeVector{"Type"};
     vector<string> strIndexVector{"Index"};
@@ -324,7 +324,7 @@ void printPseudoLabelTable(const map<string, TSLabel> &labelMap) {
 
     for (auto it = labelMap.begin(); it != labelMap.end(); ++it) {
         strNameVector.push_back(it->first);
-        strTypeVector.push_back(it->second.dataIdentifier ? findByValue(TSToken::dataIdentifierMap, *it->second.dataIdentifier)->first : "LABEL");
+        strTypeVector.push_back(it->second.dataIdentifier ? findByValue(Token::dataIdentifierMap, *it->second.dataIdentifier)->first : "LABEL");
         strIndexVector.push_back(std::to_string(it->second.ptr));
         strSegmentVector.push_back(it->second.segName);
     }
@@ -332,7 +332,7 @@ void printPseudoLabelTable(const map<string, TSLabel> &labelMap) {
     printTable("Pseudo Label Table", {strNameVector, strTypeVector, strIndexVector, strSegmentVector});
 }
 
-void printPseudoSentenceTable(const vector<TSPseudoSentencesSegment> &segmentPseudoSentenceVector, bool printAssumes) {
+void printPseudoSentenceTable(const vector<PseudoSentencesSegment> &segmentPseudoSentenceVector, bool printAssumes) {
     size_t maxOpsAmmount = 0;
     for (auto segIt = segmentPseudoSentenceVector.begin(); segIt != segmentPseudoSentenceVector.end(); ++segIt) {
         for (auto it = segIt->pseudoSentences.begin(); it != segIt->pseudoSentences.end(); ++it) {
@@ -366,7 +366,7 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegment> &segmentPse
                     assumeStr += ", ";
                 assumeStr += jt->first;
                 assumeStr += ":";
-                assumeStr += findByValue(TSToken::registerMap, jt->second)->first;
+                assumeStr += findByValue(Token::registerMap, jt->second)->first;
             }
 
             strAssumesVector.push_back(assumeStr);
@@ -393,7 +393,7 @@ void printPseudoSentenceTable(const vector<TSPseudoSentencesSegment> &segmentPse
     printTable("Pseudo Sentence Table", strTableVectors);
 }
 
-void printRawSentenceTable(const vector<TSRawSentencesSegment> &rawSentencesSegmentContainerVector, const map<string, TSLabel> &labelMap, bool printAssumes) {
+void printRawSentenceTable(const vector<RawSentencesSegment> &rawSentencesSegmentContainerVector, const map<string, Label> &labelMap, bool printAssumes) {
     size_t maxOpsAmmount = 0;
     for (auto segIt = rawSentencesSegmentContainerVector.begin(); segIt != rawSentencesSegmentContainerVector.end(); ++segIt) {
         for (auto it = segIt->rawSentences.begin(); it != segIt->rawSentences.end(); ++it) {
@@ -433,7 +433,7 @@ void printRawSentenceTable(const vector<TSRawSentencesSegment> &rawSentencesSegm
                     assumeStr += ", ";
                 assumeStr += jt->first;
                 assumeStr += ":";
-                assumeStr += findByValue(TSToken::registerMap, jt->second)->first;
+                assumeStr += findByValue(Token::registerMap, jt->second)->first;
             }
 
             strAssumesVector.push_back(assumeStr);
@@ -455,7 +455,7 @@ void printRawSentenceTable(const vector<TSRawSentencesSegment> &rawSentencesSegm
     printTable("Raw Sentence Table", strTableVectors);
 }
 
-void printSentenceTable(const vector<TSSentencesSegment> &sentencesSegmentContainerVector, bool printAssumes)
+void printSentenceTable(const vector<SentencesSegment> &sentencesSegmentContainerVector, bool printAssumes)
 {
     size_t maxOpsAmmount = 0;
     for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt) {
@@ -496,7 +496,7 @@ void printSentenceTable(const vector<TSSentencesSegment> &sentencesSegmentContai
                     assumeStr += ", ";
                 assumeStr += jt->first;
                 assumeStr += ":";
-                assumeStr += findByValue(TSToken::registerMap, jt->second)->first;
+                assumeStr += findByValue(Token::registerMap, jt->second)->first;
             }
 
             strAssumesVector.push_back(assumeStr);
@@ -537,7 +537,7 @@ string hexStringFromSentenceBytePresentation(const vector<vector<uchar>> &senten
     return strStream.str();
 }
 
-void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVector) {
+void printListing(const vector<SentencesSegment> &sentencesSegmentContainerVector) {
     for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt) {
         cout << segIt->segName << " SEGMENT" << endl << endl;
 
@@ -578,12 +578,12 @@ void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVec
     }
 }
 
-void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVector, const tuple<vector<TSPseudoSentencesSegment>, map<string, TSLabel>> &pseudoSentenceSplit) {
-    const vector<TSPseudoSentencesSegment> &pseudoSentencesSegmentContainerVector = get<0>(pseudoSentenceSplit);
-    const map<string, TSLabel> &labelMap = get<1>(pseudoSentenceSplit);
+void printListing(const vector<SentencesSegment> &sentencesSegmentContainerVector, const tuple<vector<PseudoSentencesSegment>, map<string, Label>> &pseudoSentenceSplit) {
+    const vector<PseudoSentencesSegment> &pseudoSentencesSegmentContainerVector = get<0>(pseudoSentenceSplit);
+    const map<string, Label> &labelMap = get<1>(pseudoSentenceSplit);
     
     for (auto segIt = sentencesSegmentContainerVector.begin(); segIt != sentencesSegmentContainerVector.end(); ++segIt) {
-        const vector<TSPseudoSentence> &pseudoSentenceVector = (pseudoSentencesSegmentContainerVector[segIt - sentencesSegmentContainerVector.begin()]).pseudoSentences;
+        const vector<PseudoSentence> &pseudoSentenceVector = (pseudoSentencesSegmentContainerVector[segIt - sentencesSegmentContainerVector.begin()]).pseudoSentences;
 
         cout << segIt->segName << " SEGMENT" << endl << endl;
 
@@ -599,7 +599,7 @@ void printListing(const vector<TSSentencesSegment> &sentencesSegmentContainerVec
                 }
             }
 
-            const TSPseudoSentence &pseudoSentence = pseudoSentenceVector[it - segIt->sentences.begin()];
+            const PseudoSentence &pseudoSentence = pseudoSentenceVector[it - segIt->sentences.begin()];
 
             cout << std::hex << std::setw(4) << disp << std::dec << "  ";
             

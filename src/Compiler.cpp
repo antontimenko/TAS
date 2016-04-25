@@ -1,25 +1,25 @@
-#include "TSCompiler.h"
+#include "Compiler.h"
 
-#include "TSLexeme.h"
-#include "TSException.h"
-#include "TSToken.h"
-#include "TSDiagnostics.h"
-#include "TSPreprocessor.h"
-#include "TSPseudoSentence.h"
-#include "TSRawSentence.h"
-#include "TSSentence.h"
+#include "Lexeme.h"
+#include "Exception.h"
+#include "Token.h"
+#include "Diagnostics.h"
+#include "Preprocessor.h"
+#include "PseudoSentence.h"
+#include "RawSentence.h"
+#include "Sentence.h"
 #include <fstream>
 
-const TSCompiler::Arch TSCompiler::arch = Arch::X86_16;
+const Compiler::Arch Compiler::arch = Arch::X86_16;
 
-TSCompiler::TSCompiler() {
+Compiler::Compiler() {
 }
 
-void TSCompiler::compile(const string &sourceFilePath) const {
+void Compiler::compile(const string &sourceFilePath) const {
     try {
         std::ifstream sourceFile(sourceFilePath);
         if (!sourceFile.is_open())
-            throw TSException(string("File \'") + sourceFilePath + "\' not found, or permission denied");
+            throw Exception(string("File \'") + sourceFilePath + "\' not found, or permission denied");
 
         string sourceFileContents((std::istreambuf_iterator<char>(sourceFile)), std::istreambuf_iterator<char>());
 
@@ -34,7 +34,7 @@ void TSCompiler::compile(const string &sourceFilePath) const {
             //printRawSentenceTable(phase6, get<1>(phase5), true); //SYNTATICAL ANALYZER
             auto phase7 = constructSentences(phase6);
             printListing(phase7, phase5); //LISTING
-        } catch (TSCompileError &e) {
+        } catch (CompileError &e) {
             printCompileError(e.what(), sourceFileContents, e.pos());
         }
     } catch (std::exception &e) {
@@ -42,11 +42,11 @@ void TSCompiler::compile(const string &sourceFilePath) const {
     }
 }
 
-TSCompiler &TSCompiler::instance() {
-    static TSCompiler compiler;
+Compiler &Compiler::instance() {
+    static Compiler compiler;
     return compiler;
 }
 
-void TSCompile(const string &sourceFilePath) {
-    TSCompiler::instance().compile(sourceFilePath);
+void Compile(const string &sourceFilePath) {
+    Compiler::instance().compile(sourceFilePath);
 }

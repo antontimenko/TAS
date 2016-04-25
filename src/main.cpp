@@ -1,6 +1,6 @@
-#include "TSGlobal.h"
-#include "TSCompiler.h"
-#include "TSDiagnostics.h"
+#include "Global.h"
+#include "Compiler.h"
+#include "Diagnostics.h"
 
 const char *listingFileType = "lst";
 
@@ -10,7 +10,7 @@ int main(int argc, const char **argv) {
     else {
         string sourceFileName(argv[1]);
 
-        TSCompile(sourceFileName);
+        Compile(sourceFileName);
     }
 
     return 0;
