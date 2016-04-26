@@ -9,7 +9,6 @@
 namespace OperandMask {
 
 extern const map<string, Mask> registerMap;
-extern const set<Mask> segmentRegisters;
 
 };
 
@@ -18,12 +17,15 @@ class InstructionSentence;
 namespace InstructionNS {
 
 enum class Instruction {
-    NOP,
-    SHL,
-    JC,
-    NOT,
-    ADD,
-    SUB
+    DAA,
+    INC,
+    DEC,
+    ADC,
+    CMP,
+    AND,
+    MOV,
+    XOR,
+    JLE
 };
 
 enum class DataIdentifier {

@@ -178,8 +178,7 @@ RawInstructionSentence::RawInstructionSentence(const PseudoSentence &pseudoSente
                 throw CompileError("constant cannot have segment override", operandPos);
 
             Integer constant = mathExpressionComputer(convertToMathOperationVector({jt, firstEndIt}));
-            RawNumber rawNum{constant, nullopt, false};
-            operandContainerVector.push_back(OperandContainer({opMask | IMM, rawNum}, operandPos));
+            operandContainerVector.push_back(OperandContainer({opMask | IMM, {constant, nullopt, false}}, operandPos));
             continue;
         }
         rawOperandTokenContainerVectors.push_back({jt, firstEndIt});
@@ -211,7 +210,7 @@ RawInstructionSentence::RawInstructionSentence(const PseudoSentence &pseudoSente
             operandTokenContainerVectors.push_back({firstIt, kt->end()});
         }
 
-        RawNumber disp;
+        RawNumber disp = {0, nullopt, false};
         
         Mask baseReg;
         Mask indexReg;

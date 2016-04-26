@@ -43,15 +43,6 @@ const map<string, Mask> registerMap = {
     {"GS", GS}
 };
 
-const set<Mask> segmentRegisters = {
-    ES,
-    CS,
-    SS,
-    DS,
-    FS,
-    GS
-};
-
 }
 
 namespace InstructionNS {
@@ -59,12 +50,15 @@ namespace InstructionNS {
 using namespace OperandMask;
 
 const map<string, Instruction> instructionMap = {
-    {"NOP", Instruction::NOP},
-    {"SHL", Instruction::SHL},
-    {"JC", Instruction::JC},
-    {"NOT", Instruction::NOT},
-    {"ADD", Instruction::ADD},
-    {"SUB", Instruction::SUB}
+    {"DAA", Instruction::DAA},
+    {"INC", Instruction::INC},
+    {"DEC", Instruction::DEC},
+    {"ADC", Instruction::ADC},
+    {"CMP", Instruction::CMP},
+    {"AND", Instruction::AND},
+    {"MOV", Instruction::MOV},
+    {"XOR", Instruction::XOR},
+    {"JLE", Instruction::JLE}
 };
 
 const map<string, DataIdentifier> dataIdentifierMap = {
@@ -74,7 +68,7 @@ const map<string, DataIdentifier> dataIdentifierMap = {
 };
 
 const set<Instruction> jumpInstructionsSet = {
-    Instruction::JC
+    Instruction::JLE
 };
 
 uchar composeBits(bitset<2> one, bitset<3> two, bitset<3> three) {
@@ -555,23 +549,30 @@ vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, Instruction
 }
 
 const vector<Definition> instructionDefinitionVector = {
-    {{0x90},    Instruction::NOP,   {},                                          onlyOpcodeComputeFunc},
+    {{0x27},    Instruction::DAA,   {},                                          onlyOpcodeComputeFunc},
 
-    {{0xD0}, 4, Instruction::SHL,   {{UREG8_ANY}, {IMM8_FILL, 1}},               oneOpOpcodeWithREGComputeFunc},
-    {{0xD1}, 4, Instruction::SHL,   {{UREG16_ANY | UREG32_ANY}, {IMM8_FILL, 1}}, oneOpOpcodeWithREGComputeFunc},
+    {{0xFE}, 0, Instruction::INC,   {{UREG8_ANY}},                               oneOpOpcodeWithREGComputeFunc},
+    {{0xFF}, 0, Instruction::INC,   {{UREG16_ANY}},                              oneOpOpcodeWithREGComputeFunc},
 
-    {{0xF6}, 2, Instruction::NOT,   {{MEM8_ANY}},                                oneOpOpcodeWithREGComputeFunc},
-    {{0xF7}, 2, Instruction::NOT,   {{MEM16_ANY | MEM32_ANY}},                   oneOpOpcodeWithREGComputeFunc},
+    {{0xFE}, 1, Instruction::DEC,   {{MEM8_ANY}},                                oneOpOpcodeWithREGComputeFunc},
+    {{0xFF}, 1, Instruction::DEC,   {{MEM16_ANY}},                               oneOpOpcodeWithREGComputeFunc},
 
-    {{0x02},    Instruction::ADD,   {{UREG8_ANY}, {MEM8_ANY}},                   twoOpsClassicComputeFunc<false>},
-    {{0x03},    Instruction::ADD,   {{UREG16_ANY}, {MEM16_ANY}},                 twoOpsClassicComputeFunc<false>},
-    {{0x03},    Instruction::ADD,   {{UREG32_ANY}, {MEM32_ANY}},                 twoOpsClassicComputeFunc<false>},
+    {{0x10},    Instruction::ADC,   {{UREG8_ANY}, {UREG8_ANY}},                  twoOpsClassicComputeFunc<true>},
+    {{0x11},    Instruction::ADC,   {{UREG16_ANY}, {UREG16_ANY}},                twoOpsClassicComputeFunc<true>},
 
-    {{0x28},    Instruction::SUB,   {{MEM8_ANY}, {UREG8_ANY}},                   twoOpsClassicComputeFunc<true>},
-    {{0x29},    Instruction::SUB,   {{MEM16_ANY}, {UREG16_ANY}},                 twoOpsClassicComputeFunc<true>},
-    {{0x29},    Instruction::SUB,   {{MEM32_ANY}, {UREG32_ANY}},                 twoOpsClassicComputeFunc<true>},
+    {{0x3A},    Instruction::CMP,   {{UREG8_ANY}, {MEM8_ANY}},                   twoOpsClassicComputeFunc<false>},
+    {{0x3B},    Instruction::CMP,   {{UREG16_ANY}, {MEM16_ANY}},                 twoOpsClassicComputeFunc<false>},
 
-    {{0x72},    Instruction::JC,    {{REL8_FILL}},                               relativeJumpComputeFunc}
+    {{0x20},    Instruction::AND,   {{MEM8_ANY}, {UREG8_ANY}},                   twoOpsClassicComputeFunc<true>},
+    {{0x21},    Instruction::AND,   {{MEM16_ANY}, {UREG16_ANY}},                 twoOpsClassicComputeFunc<true>},
+
+    {{0xC6}, 0, Instruction::MOV,   {{UREG8_ANY}, {IMM8_FILL}},                  twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0xC7}, 0, Instruction::MOV,   {{UREG16_ANY}, {IMM16_FILL}},                twoOpsOpcodeWithREGAndIMMComputeFunc},
+
+    {{0x80}, 6, Instruction::XOR,   {{UREG8_ANY}, {IMM8_FILL}},                  twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0x81}, 6, Instruction::XOR,   {{UREG16_ANY}, {IMM16_FILL}},                twoOpsOpcodeWithREGAndIMMComputeFunc},
+
+    {{0x72},    Instruction::JLE,   {{REL8_FILL}},                               relativeJumpComputeFunc}
 };
 
 }

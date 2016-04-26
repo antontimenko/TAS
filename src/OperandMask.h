@@ -157,7 +157,7 @@ enum : unsigned long long {
 class Mask : public bitset<64> {
 public:
     constexpr Mask() noexcept :
-        bitset<64>()
+        bitset<64>(0)
     {}
 
     constexpr Mask(unsigned long long val) noexcept :
