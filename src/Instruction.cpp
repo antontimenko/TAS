@@ -495,6 +495,23 @@ vector<vector<uchar>> twoOpsMoffsSpecialComputeFunc(Definition definition, Instr
     return res;
 }
 
+vector<vector<uchar>> oneOpOpcodeIncComputeFunc(Definition definition, InstructionSentence instructionSentence) {
+    vector<vector<uchar>> res;
+
+    auto firstOpCont = instructionSentence.operandContainerVector[0];
+
+    auto &firstOp = get<0>(firstOpCont);
+
+    auto dataSizeOverridePrefix = generateDataSizeOverridePrefix(firstOp);
+    res.insert(res.end(), dataSizeOverridePrefix.begin(), dataSizeOverridePrefix.end());
+
+    uchar opcode = *(definition.opcode.end() - 1);
+    opcode += getBitsetFromMask(firstOp.mask).to_ulong();
+    res.push_back({opcode});
+
+    return res;
+}
+
 vector<vector<uchar>> twoOpsOpcodeIncWithImmComputeFunc(Definition definition, InstructionSentence instructionSentence) {
     vector<vector<uchar>> res;
 
@@ -552,13 +569,13 @@ const vector<Definition> instructionDefinitionVector = {
     {{0x27},    Instruction::DAA,   {},                                          onlyOpcodeComputeFunc},
 
     {{0xFE}, 0, Instruction::INC,   {{UREG8_ANY}},                               oneOpOpcodeWithREGComputeFunc},
-    {{0xFF}, 0, Instruction::INC,   {{UREG16_ANY}},                              oneOpOpcodeWithREGComputeFunc},
+    {{0x40},    Instruction::INC,   {{UREG16_ANY}},                              oneOpOpcodeIncComputeFunc},
 
     {{0xFE}, 1, Instruction::DEC,   {{MEM8_ANY}},                                oneOpOpcodeWithREGComputeFunc},
     {{0xFF}, 1, Instruction::DEC,   {{MEM16_ANY}},                               oneOpOpcodeWithREGComputeFunc},
 
-    {{0x10},    Instruction::ADC,   {{UREG8_ANY}, {UREG8_ANY}},                  twoOpsClassicComputeFunc<true>},
-    {{0x11},    Instruction::ADC,   {{UREG16_ANY}, {UREG16_ANY}},                twoOpsClassicComputeFunc<true>},
+    {{0x12},    Instruction::ADC,   {{UREG8_ANY}, {UREG8_ANY}},                  twoOpsClassicComputeFunc<false>},
+    {{0x13},    Instruction::ADC,   {{UREG16_ANY}, {UREG16_ANY}},                twoOpsClassicComputeFunc<false>},
 
     {{0x3A},    Instruction::CMP,   {{UREG8_ANY}, {MEM8_ANY}},                   twoOpsClassicComputeFunc<false>},
     {{0x3B},    Instruction::CMP,   {{UREG16_ANY}, {MEM16_ANY}},                 twoOpsClassicComputeFunc<false>},
@@ -566,11 +583,12 @@ const vector<Definition> instructionDefinitionVector = {
     {{0x20},    Instruction::AND,   {{MEM8_ANY}, {UREG8_ANY}},                   twoOpsClassicComputeFunc<true>},
     {{0x21},    Instruction::AND,   {{MEM16_ANY}, {UREG16_ANY}},                 twoOpsClassicComputeFunc<true>},
 
-    {{0xC6}, 0, Instruction::MOV,   {{UREG8_ANY}, {IMM8_FILL}},                  twoOpsOpcodeWithREGAndIMMComputeFunc},
-    {{0xC7}, 0, Instruction::MOV,   {{UREG16_ANY}, {IMM16_FILL}},                twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0xB0},    Instruction::MOV,   {{UREG8_ANY}, {IMM8_FILL}},                  twoOpsOpcodeIncWithImmComputeFunc},
+    {{0xB8},    Instruction::MOV,   {{UREG16_ANY}, {IMM16_FILL}},                twoOpsOpcodeIncWithImmComputeFunc},
 
-    {{0x80}, 6, Instruction::XOR,   {{UREG8_ANY}, {IMM8_FILL}},                  twoOpsOpcodeWithREGAndIMMComputeFunc},
-    {{0x81}, 6, Instruction::XOR,   {{UREG16_ANY}, {IMM16_FILL}},                twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0x80}, 6, Instruction::XOR,   {{MEM8_ANY}, {IMM8_FILL}},                   twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0x83}, 6, Instruction::XOR,   {{MEM16_ANY}, {IMM8_FILL}},                  twoOpsOpcodeWithREGAndIMMComputeFunc},
+    {{0x81}, 6, Instruction::XOR,   {{MEM16_ANY}, {IMM16_FILL}},                 twoOpsOpcodeWithREGAndIMMComputeFunc},
 
     {{0x72},    Instruction::JLE,   {{REL8_FILL}},                               relativeJumpComputeFunc}
 };
