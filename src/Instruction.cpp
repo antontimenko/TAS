@@ -321,7 +321,7 @@ vector<vector<uchar>> generateMODRMAndSIB(const InstructionSentence::OperandCont
                         res.push_back({op.num.getCharArraySigned(getSuitableDispSize(op))});
                 }
             } else {
-                res.push_back({composeBits(0b00, reg, 0b110)});
+                res.push_back({composeBits(0b00, reg, 0b101)});
                 res.push_back({op.num.getCharArraySigned(Integer::Size::S_32)});
             }
         }
