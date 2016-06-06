@@ -18,14 +18,12 @@ namespace InstructionNS {
 
 enum class Instruction {
     DAA,
-    INC,
-    DEC,
-    ADC,
-    CMP,
-    AND,
+    NOT,
+    PUSH,
+    POP,
+    OR,
     MOV,
-    XOR,
-    JLE
+    JBE
 };
 
 enum class DataIdentifier {

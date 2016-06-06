@@ -10,7 +10,7 @@
 #include "Sentence.h"
 #include <fstream>
 
-const Compiler::Arch Compiler::arch = Arch::X86_16;
+const Compiler::Arch Compiler::arch = Arch::X86_32;
 
 Compiler::Compiler() {
 }

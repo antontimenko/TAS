@@ -51,14 +51,12 @@ using namespace OperandMask;
 
 const map<string, Instruction> instructionMap = {
     {"DAA", Instruction::DAA},
-    {"INC", Instruction::INC},
-    {"DEC", Instruction::DEC},
-    {"ADC", Instruction::ADC},
-    {"CMP", Instruction::CMP},
-    {"AND", Instruction::AND},
+    {"NOT", Instruction::NOT},
+    {"PUSH", Instruction::PUSH},
+    {"POP", Instruction::POP},
+    {"OR", Instruction::OR},
     {"MOV", Instruction::MOV},
-    {"XOR", Instruction::XOR},
-    {"JLE", Instruction::JLE}
+    {"JBE", Instruction::JBE}
 };
 
 const map<string, DataIdentifier> dataIdentifierMap = {
@@ -68,7 +66,7 @@ const map<string, DataIdentifier> dataIdentifierMap = {
 };
 
 const set<Instruction> jumpInstructionsSet = {
-    Instruction::JLE
+    Instruction::JBE
 };
 
 uchar composeBits(bitset<2> one, bitset<3> two, bitset<3> three) {
@@ -192,14 +190,14 @@ vector<vector<uchar>> generateSegmentOverridePrefixes(const InstructionSentence 
     if (op.mask.match(MEM)) {
         auto segmentPrefix = instructionSentence.segmentPrefix;
 
-        if (op.mask.match(MEM_16)) {
-            if ((!segmentPrefix) && (op.segName)) {
-                auto assumeMap = instructionSentence.assume.getMap();
-                auto assumeSegmentIt = assumeMap.find(*op.segName);
-                if (assumeSegmentIt != assumeMap.end())
-                    segmentPrefix = getSegmentOverridePrefix(assumeSegmentIt->second);
-            }
+        if ((!segmentPrefix) && (op.segName)) {
+            auto assumeMap = instructionSentence.assume.getMap();
+            auto assumeSegmentIt = assumeMap.find(*op.segName);
+            if (assumeSegmentIt != assumeMap.end())
+                segmentPrefix = getSegmentOverridePrefix(assumeSegmentIt->second);
+        }
 
+        if (op.mask.match(MEM_16)) {
             if (op.mask.match(MEM_16_BP) || 
                 op.mask.match(MEM_16_BP_SI) ||
                 op.mask.match(MEM_16_BP_DI))
@@ -568,29 +566,20 @@ vector<vector<uchar>> relativeJumpComputeFunc(Definition definition, Instruction
 const vector<Definition> instructionDefinitionVector = {
     {{0x27},    Instruction::DAA,   {},                                          onlyOpcodeComputeFunc},
 
-    {{0xFE}, 0, Instruction::INC,   {{UREG8_ANY}},                               oneOpOpcodeWithREGComputeFunc},
-    {{0x40},    Instruction::INC,   {{UREG16_ANY}},                              oneOpOpcodeIncComputeFunc},
+    {{0xF6}, 2, Instruction::NOT,   {{UREG8_ANY}},                               oneOpOpcodeWithREGComputeFunc},
+    {{0xF7}, 2, Instruction::NOT,   {{UREG32_ANY}},                              oneOpOpcodeWithREGComputeFunc},
 
-    {{0xFE}, 1, Instruction::DEC,   {{MEM8_ANY}},                                oneOpOpcodeWithREGComputeFunc},
-    {{0xFF}, 1, Instruction::DEC,   {{MEM16_ANY}},                               oneOpOpcodeWithREGComputeFunc},
+    {{0xFF}, 6, Instruction::PUSH,  {{MEM32_ANY}},                               oneOpOpcodeWithREGComputeFunc},
 
-    {{0x12},    Instruction::ADC,   {{UREG8_ANY}, {UREG8_ANY}},                  twoOpsClassicComputeFunc<false>},
-    {{0x13},    Instruction::ADC,   {{UREG16_ANY}, {UREG16_ANY}},                twoOpsClassicComputeFunc<false>},
+    {{0x58},    Instruction::POP,   {{UREG32_ANY}},                              oneOpOpcodeIncComputeFunc},
 
-    {{0x3A},    Instruction::CMP,   {{UREG8_ANY}, {MEM8_ANY}},                   twoOpsClassicComputeFunc<false>},
-    {{0x3B},    Instruction::CMP,   {{UREG16_ANY}, {MEM16_ANY}},                 twoOpsClassicComputeFunc<false>},
+    {{0x0A},    Instruction::OR,    {{UREG8_ANY}, {MEM8_ANY}},                   twoOpsClassicComputeFunc<false>},
+    {{0x0B},    Instruction::OR,    {{UREG32_ANY}, {MEM32_ANY}},                 twoOpsClassicComputeFunc<false>},
 
-    {{0x20},    Instruction::AND,   {{MEM8_ANY}, {UREG8_ANY}},                   twoOpsClassicComputeFunc<true>},
-    {{0x21},    Instruction::AND,   {{MEM16_ANY}, {UREG16_ANY}},                 twoOpsClassicComputeFunc<true>},
+    {{0x88},    Instruction::MOV,   {{MEM8_ANY}, {UREG8_ANY}},                   twoOpsClassicComputeFunc<true>},
+    {{0x89},    Instruction::MOV,   {{MEM32_ANY}, {UREG32_ANY}},                 twoOpsClassicComputeFunc<true>},
 
-    {{0xB0},    Instruction::MOV,   {{UREG8_ANY}, {IMM8_FILL}},                  twoOpsOpcodeIncWithImmComputeFunc},
-    {{0xB8},    Instruction::MOV,   {{UREG16_ANY}, {IMM16_FILL}},                twoOpsOpcodeIncWithImmComputeFunc},
-
-    {{0x80}, 6, Instruction::XOR,   {{MEM8_ANY}, {IMM8_FILL}},                   twoOpsOpcodeWithREGAndIMMComputeFunc},
-    {{0x83}, 6, Instruction::XOR,   {{MEM16_ANY}, {IMM8_FILL}},                  twoOpsOpcodeWithREGAndIMMComputeFunc},
-    {{0x81}, 6, Instruction::XOR,   {{MEM16_ANY}, {IMM16_FILL}},                 twoOpsOpcodeWithREGAndIMMComputeFunc},
-
-    {{0x72},    Instruction::JLE,   {{REL8_FILL}},                               relativeJumpComputeFunc}
+    {{0x76},    Instruction::JBE,   {{REL8_FILL}},                               relativeJumpComputeFunc}
 };
 
 }
