@@ -99,7 +99,10 @@ string getTokenString(const Token &token) {
         returnString = findByValue(Token::mathSymbolMap, token.value<Token::MathSymbol>())->first;
         break;
     case Token::Type::SEGMENT_DIRECTIVE:
-        returnString = findByValue(Token::segmentDirectiveMap, token.value<Token::SegmentDirective>())->first;
+        returnString = Token::segmentStr;
+        break;
+    case Token::Type::ENDS_DIRECTIVE:
+        returnString = Token::endsStr;
         break;
     case Token::Type::INSTRUCTION:
         returnString = findByValue(Token::instructionMap, token.value<Token::Instruction>())->first;

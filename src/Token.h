@@ -16,6 +16,7 @@ public:
         COMMA,
         COLON,
         SEGMENT_DIRECTIVE,
+        ENDS_DIRECTIVE,
         INSTRUCTION,
         REGISTER,
         SIZE_IDENTIFIER,
@@ -42,11 +43,6 @@ public:
         DIVIDE,
         BRACKET_OPEN,
         BRACKET_CLOSE
-    };
-
-    enum class SegmentDirective {
-        SEGMENT,
-        ENDS
     };
 
     typedef InstructionNS::Instruction Instruction;
@@ -113,13 +109,14 @@ public:
     
     static const map<string, MemoryBracket> memoryBracketMap;
     static const map<string, MathSymbol> mathSymbolMap;
-    static const map<string, SegmentDirective> segmentDirectiveMap;
     static const map<string, Instruction> &instructionMap;
     static const map<string, Register> &registerMap;
     static const map<string, SizeIdentifier> sizeIdentifierMap;
     static const map<string, DataIdentifier> &dataIdentifierMap;
     static const map<string, ConditionDirective> conditionDirectiveMap;
     static const map<string, Condition> conditionMap;
+    static const string segmentStr;
+    static const string endsStr;
     static const string commaStr;
     static const string colonStr;
     static const string sizeOperatorStr;

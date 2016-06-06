@@ -315,6 +315,10 @@ auto processSymbolicConstantReplace(vector<TokenContainer> tokenContainerVector,
     return tokenContainerVector;
 }
 
+auto processMacros(const vector<TokenContainer> &tokenContainerVector) {
+    return tokenContainerVector;
+}
+
 auto processSegmentsParting(const vector<TokenContainer> &tokenContainerVector) {
     vector<TokenSegment> segmentTokenContainerVector;
 
@@ -323,32 +327,30 @@ auto processSegmentsParting(const vector<TokenContainer> &tokenContainerVector) 
     auto segmentStartIt = tokenContainerVector.end();
     for (auto it = tokenContainerVector.begin(); it < tokenContainerVector.end(); ++it) {
         if (it->token.type() == Token::Type::SEGMENT_DIRECTIVE) {
-            if (it->token.value<Token::SegmentDirective>() == Token::SegmentDirective::SEGMENT) {
-                if (segmentStartIt == tokenContainerVector.end()) {
-                    if ((it != tokenContainerVector.begin()) &&
-                        ((it - 1)->token.type() == Token::Type::USER_IDENTIFIER))
-                        segmentStartIt = it;
-                    else
-                        throw CompileError("SEGMENT must have a name", it->pos);
-                } else
-                    throw CompileError("you cannot declare a segment inside another one", it->pos);
-            } else {
-                if (segmentStartIt != tokenContainerVector.end()) {
-                    if ((it != tokenContainerVector.begin()) &&
-                        ((it - 1)->token.type() == Token::Type::USER_IDENTIFIER) &&
-                        ((it - 1)->token.value<string>() == (segmentStartIt - 1)->token.value<string>()))
-                    {
-                        segmentTokenContainerVector.push_back({(it - 1)->token.value<string>(), vector<TokenContainer>(segmentStartIt + 1, it - 1)});
+            if (segmentStartIt == tokenContainerVector.end()) {
+                if ((it != tokenContainerVector.begin()) &&
+                    ((it - 1)->token.type() == Token::Type::USER_IDENTIFIER))
+                    segmentStartIt = it;
+                else
+                    throw CompileError("SEGMENT must have a name", it->pos);
+            } else
+                throw CompileError("you cannot declare a segment inside another one", it->pos);
+        } else if (it->token.type() == Token::Type::ENDS_DIRECTIVE) {
+            if (segmentStartIt != tokenContainerVector.end()) {
+                if ((it != tokenContainerVector.begin()) &&
+                    ((it - 1)->token.type() == Token::Type::USER_IDENTIFIER) &&
+                    ((it - 1)->token.value<string>() == (segmentStartIt - 1)->token.value<string>()))
+                {
+                    segmentTokenContainerVector.push_back({(it - 1)->token.value<string>(), vector<TokenContainer>(segmentStartIt + 1, it - 1)});
 
-                        excludes.insert(excludes.end(), segmentStartIt - 1, it + 1);
+                    excludes.insert(excludes.end(), segmentStartIt - 1, it + 1);
 
-                        segmentStartIt = tokenContainerVector.end();
-                    }
-                    else
-                        throw CompileError("ENDS require a name", it->pos);
-                } else
-                    throw CompileError("ENDS must end a SEGMENT", it->pos);
-            }
+                    segmentStartIt = tokenContainerVector.end();
+                }
+                else
+                    throw CompileError("ENDS require a name", it->pos);
+            } else
+                throw CompileError("ENDS must end a SEGMENT", it->pos);
         }
     }
 
@@ -370,6 +372,7 @@ tuple<vector<TokenSegment>, map<string, Integer>> preprocess(const vector<TokenC
     auto equPhaseResult = processEQUs(tokenContainerVector);
     auto ifPhaseResult = processIFs(get<1>(equPhaseResult), get<0>(equPhaseResult));
     auto constantReplaceResult = processSymbolicConstantReplace(ifPhaseResult, get<0>(equPhaseResult));
-    auto segmentsPartingResult = processSegmentsParting(constantReplaceResult);
+    auto macrosResult = processMacros(constantReplaceResult);
+    auto segmentsPartingResult = processSegmentsParting(macrosResult);
     return make_tuple(segmentsPartingResult, get<0>(equPhaseResult));
 }

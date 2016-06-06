@@ -17,11 +17,6 @@ const map<string, Token::MathSymbol> Token::mathSymbolMap = {
     {")", Token::MathSymbol::BRACKET_CLOSE},
 };
 
-const map<string, Token::SegmentDirective> Token::segmentDirectiveMap = {
-    {"SEGMENT", Token::SegmentDirective::SEGMENT},
-    {"ENDS", Token::SegmentDirective::ENDS}
-};
-
 const map<string, Token::Instruction> &Token::instructionMap = InstructionNS::instructionMap;
 
 const map<string, Token::Register> &Token::registerMap = OperandMask::registerMap;
@@ -49,6 +44,8 @@ const map<string, Token::Condition> Token::conditionMap = {
     {"GE", Token::Condition::GE}
 };
 
+const string Token::segmentStr = "SEGMENT";
+const string Token::endsStr = "ENDS";
 const string Token::commaStr = ",";
 const string Token::colonStr = ":";
 const string Token::sizeOperatorStr = "PTR";
@@ -65,7 +62,11 @@ vector<TokenContainer> constructTokenContainerVector(vector<LexemeContainer> &le
         
         Token currentToken;
 
-        if (lexeme == Token::commaStr)
+        if (lexeme == Token::segmentStr)
+            currentToken = Token(Token::Type::SEGMENT_DIRECTIVE);
+        else if (lexeme == Token::endsStr)
+            currentToken = Token(Token::Type::ENDS_DIRECTIVE);
+        else if (lexeme == Token::commaStr)
             currentToken = Token(Token::Type::COMMA);
         else if (lexeme == Token::colonStr)
             currentToken = Token(Token::Type::COLON);
@@ -81,8 +82,6 @@ vector<TokenContainer> constructTokenContainerVector(vector<LexemeContainer> &le
             currentToken = Token(Token::Type::MEMORY_BRACKET, Token::memoryBracketMap.find(lexeme)->second);
         else if (Token::mathSymbolMap.count(lexeme))
             currentToken = Token(Token::Type::MATH_SYMBOL, Token::mathSymbolMap.find(lexeme)->second);
-        else if (Token::segmentDirectiveMap.count(lexeme))
-            currentToken = Token(Token::Type::SEGMENT_DIRECTIVE, Token::segmentDirectiveMap.find(lexeme)->second);
         else if (Token::instructionMap.count(lexeme))
             currentToken = Token(Token::Type::INSTRUCTION, Token::instructionMap.find(lexeme)->second);
         else if (Token::registerMap.count(lexeme))
